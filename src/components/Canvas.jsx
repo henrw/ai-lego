@@ -1,11 +1,30 @@
 
 import React from 'react';
+import Card from './Card';
+import Column from './Column';
+import { DndProvider } from 'react-dnd'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 
-const Menu = () => {
+const Canvas = () => {
+
+    const stages = [
+        "Problem Formulation",
+        "Task Definition",
+        "Dataset Construction",
+        "Model Definition",
+        "Training Process",
+        "Testing Process",
+        "Deployment",
+        "Feedback"
+    ];
+
     return (
-        <div className='flex flex-col items-center'>
-        </div>
+        <DndProvider backend={HTML5Backend}>
+            {stages.map(stage => {
+                return <Column key={`${stage}-column`} stage={stage} />
+            })}
+        </DndProvider>
     );
 };
 
-export default Menu;
+export default Canvas;
