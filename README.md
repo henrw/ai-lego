@@ -1,6 +1,13 @@
 # AI_LEGO
 A design tool/system to facilitate cross-functional collaborations in Responsible AI (RAI) to help them better identify and iterate on problematic design choices in order to prevent downstream harms in the early design stage of decision-making AI
 
+## TODO List
+- [ ] Figma task flow
+- [ ] React Drag and Drop
+- [ ] React pop-up window
+- [ ] React context manager
+- [ ] Firebase
+
 ## Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
