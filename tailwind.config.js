@@ -9,8 +9,11 @@ module.exports = {
     },
     extend: {
       colors: {
-        'dark-gray': '#D9D9D9',
+        'dark-gray': '#D7D7D7',
         'regular-gray': '#F2F2F2',
+        'cambridge-blue': '#FF5964',
+        'tea-green': '#CCDDD3',
+        'munsell-blue': '#CCDDD3'
       }
     },
   },

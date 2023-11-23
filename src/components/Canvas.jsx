@@ -2,8 +2,6 @@
 import React from 'react';
 import Card from './Card';
 import Column from './Column';
-import { DndProvider } from 'react-dnd'
-import { HTML5Backend } from 'react-dnd-html5-backend'
 
 const Canvas = () => {
 
@@ -19,11 +17,14 @@ const Canvas = () => {
     ];
 
     return (
-        <DndProvider backend={HTML5Backend}>
-            {stages.map(stage => {
-                return <Column key={`${stage}-column`} stage={stage} />
-            })}
-        </DndProvider>
+        // <DndProvider backend={HTML5Backend}>
+            <div className={`columns-8 h-full`}>
+                {stages.map(stage => {
+                    return <Column key={`${stage}-column`} stage={stage} />
+                })}
+            </div>
+
+        // </DndProvider>
     );
 };
 
