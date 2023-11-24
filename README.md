@@ -3,9 +3,9 @@ A design tool/system to facilitate cross-functional collaborations in Responsibl
 
 ## TODO List
 - [ ] Figma task flow
-- [x] React Drag and Drop - Assigned to Muzhe
+- [x] React Drag and Drop
 - [ ] React pop-up window
-- [ ] React context manager
+- [x] React context manager
 - [ ] Firebase
 
 ## Getting Started with Create React App
