@@ -3,9 +3,14 @@ A design tool/system to facilitate cross-functional collaborations in Responsibl
 
 ## TODO List
 - [ ] Figma task flow
-- [x] React Drag and Drop
+- [ ] React Drag and Drop
+  - [x] DnD
+  - [ ] Create by clicking
+  - [ ] Create by dragging
+  - [ ] Delete
 - [ ] React pop-up window
 - [x] React context manager
+  - [ ] Callback optimization
 - [ ] Firebase
 
 ## Getting Started with Create React App
