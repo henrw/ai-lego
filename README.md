@@ -3,16 +3,16 @@ A design tool/system to facilitate cross-functional collaborations in Responsibl
 
 ## TODO List
 - [ ] Figma task flow
-- [ ] Card
+- [ ] Card 
   - [x] Drag and Drop
   - [ ] Create by clicking
   - [ ] Create by dragging
   - [ ] Delete
-- [ ] Pop-up window
+- [ ] Pop-up window - Assigned to Shuyi
 - [x] State management
   - [x] Zustand setup
-  - [ ] Callback optimization
-  - [ ] connect to Firebase
+  - [ ] Callback optimization 
+  - [ ] connect to Firebase - Assigned to Shuyi
 
 ## Getting Started with Create React App
 
