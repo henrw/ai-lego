@@ -26,19 +26,19 @@ const cardsDatatemplates = {
     },
     '6-stage': {
         cardsData: [
-            { id: 'problemDef-0', descr: '', details: {}, position: { x: 100, y: 0 } },
+            { id: 'problem-0', descr: '', details: {}, position: { x: 100, y: 0 } },
             { id: 'data-0', descr: '', details: {}, position: { x: 200, y: 0 } },
-            { id: 'modelDevelopment-0', descr: '', details: {}, position: { x: 300, y: 0 } },
-            { id: 'modelEvaluation-0', descr: '', details: {}, position: { x: 400, y: 0 } },
-            { id: 'deployment-0', descr: '', details: {}, position: { x: 500, y: 0 } },
+            { id: 'modelDev-0', descr: '', details: {}, position: { x: 300, y: 0 } },
+            { id: 'modelEva-0', descr: '', details: {}, position: { x: 400, y: 0 } },
+            { id: 'deploy-0', descr: '', details: {}, position: { x: 500, y: 0 } },
             { id: 'MLOps-0', descr: '', details: {}, position: { x: 600, y: 0 } },
         ],
         arrows: [
-            {start: 'problemDef-0', end: 'data-0'},
-            {start: 'data-0', end: 'modelDevelopment-0'},
-            {start: 'modelDevelopment-0', end: 'modelEvaluation-0'},
-            {start: 'modelEvaluation-0', end: 'deployment-0'},
-            {start: 'deployment-0', end: 'MLOps-0'},
+            {start: 'problem-0', end: 'data-0'},
+            {start: 'data-0', end: 'modelDev-0'},
+            {start: 'modelDev-0', end: 'modelEva-0'},
+            {start: 'modelEva-0', end: 'deploy-0'},
+            {start: 'deploy-0', end: 'MLOps-0'},
         ]
     },
     '3-stage': {
@@ -78,15 +78,21 @@ const myStore = (set) => ({
     ),
     setCardPosition: (id, position) => set(
         produce(store => {
-            store.cardsData.map(cardData => {
-                if (cardData.id == id)
+            store.cardsData.forEach(cardData => {
+                if (cardData.id === id)
                     cardData.position = position;
             });
         })
     ),
     addArrow: (refs) => set(
         produce(store => {
-            store.arrows.push(refs);
+            let existed = false;
+            store.arrows.forEach(arrow => {
+                if (arrow.start === refs.start && arrow.end === refs.end){
+                    existed = true;
+                }
+            })
+            if (!existed) store.arrows.push(refs);
         })
     ),
     refreshArrows: () => set(
