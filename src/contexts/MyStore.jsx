@@ -15,13 +15,13 @@ const cardsDatatemplates = {
             { id: 'feedback-0', descr: '', details: {}, position: { x: 800, y: 0 } },
         ],
         arrows: [
-            {start: 'problem-0', end: 'task-0'},
-            {start: 'task-0', end: 'data-0'},
-            {start: 'data-0', end: 'model-0'},
-            {start: 'model-0', end: 'train-0'},
-            {start: 'train-0', end: 'test-0'},
-            {start: 'test-0', end: 'deploy-0'},
-            {start: 'deploy-0', end: 'feedback-0'},
+            { start: 'problem-0', end: 'task-0' },
+            { start: 'task-0', end: 'data-0' },
+            { start: 'data-0', end: 'model-0' },
+            { start: 'model-0', end: 'train-0' },
+            { start: 'train-0', end: 'test-0' },
+            { start: 'test-0', end: 'deploy-0' },
+            { start: 'deploy-0', end: 'feedback-0' },
         ]
     },
     '6-stage': {
@@ -34,11 +34,11 @@ const cardsDatatemplates = {
             { id: 'MLOps-0', descr: '', details: {}, position: { x: 600, y: 0 } },
         ],
         arrows: [
-            {start: 'problem-0', end: 'data-0'},
-            {start: 'data-0', end: 'modelDev-0'},
-            {start: 'modelDev-0', end: 'modelEva-0'},
-            {start: 'modelEva-0', end: 'deploy-0'},
-            {start: 'deploy-0', end: 'MLOps-0'},
+            { start: 'problem-0', end: 'data-0' },
+            { start: 'data-0', end: 'modelDev-0' },
+            { start: 'modelDev-0', end: 'modelEva-0' },
+            { start: 'modelEva-0', end: 'deploy-0' },
+            { start: 'deploy-0', end: 'MLOps-0' },
         ]
     },
     '3-stage': {
@@ -48,8 +48,8 @@ const cardsDatatemplates = {
             { id: 'deploy-0', descr: '', details: {}, position: { x: 300, y: 0 } },
         ],
         arrows: [
-            {start: 'design-0', end: 'develop-0'},
-            {start: 'develop-0', end: 'deploy-0'},
+            { start: 'design-0', end: 'develop-0' },
+            { start: 'develop-0', end: 'deploy-0' },
         ]
     },
 };
@@ -70,7 +70,7 @@ const myStore = (set) => ({
     addCardData: (stage) => set(
         produce(store => {
             store.uuid += 1;
-            store.cardsData.push({ id: stage+'-'+store.uuid, descr: '', details: {}, position: { x: 0, y: 0 } });
+            store.cardsData.push({ id: stage + '-' + store.uuid, descr: '', details: {}, position: { x: 0, y: 0 } });
         }
         ),
         false,
@@ -88,7 +88,7 @@ const myStore = (set) => ({
         produce(store => {
             let existed = false;
             store.arrows.forEach(arrow => {
-                if (arrow.start === refs.start && arrow.end === refs.end){
+                if (arrow.start === refs.start && arrow.end === refs.end) {
                     existed = true;
                 }
             })
@@ -102,7 +102,7 @@ const myStore = (set) => ({
     ),
     addTemplate: (type) => set(
         produce(store => {
-            if (cardsDatatemplates[type]){
+            if (cardsDatatemplates[type]) {
                 store.cardsData = cardsDatatemplates[type].cardsData;
                 store.arrows = cardsDatatemplates[type].arrows;
             } else {
@@ -110,7 +110,7 @@ const myStore = (set) => ({
                 store.arrows = [];
             }
         })
-    )
+    ),
     // const newCardData = JSON.parse(JSON.stringify(state.cardDataTemplate));
     // newCardData.id = stage + "-" + state.stagesData[stage].nextCount;
 
@@ -120,23 +120,12 @@ const myStore = (set) => ({
     // return {
     //     cardsData: [...state.cardsData],
     // };
-    // deleteCard: (id) => set((state) => {
-    //     // let newCardsData = state.cardsData.filter(cardData => (cardData.id != id));
-    //     const [stage, count] = id.split('-');
-    //     let newLive = state.stagesData[stage].live.filter(idx => (idx !== count));
-    //     let newDeleted = [state.stagesData[stage].newDeleted, count];
-    //     return {
-    //         cardsData: state.cardsData,
-    //         stagesData: {
-    //             ...state.stagesData,
-    //             stage: {
-    //                 ...state.stagesData[stage],
-    //                 live: newLive,
-    //                 deleted: newDeleted,
-    //             }
-    //         }
-    //     }
-    // })
+    deleteCard: (id) => set(
+        produce(store => {
+            store.cardsData = store.cardsData.filter(cardData => (cardData.id != id));
+            store.arrows = store.arrows.filter(arrow => (arrow.start != id && arrow.end != id));
+        })
+    )
 });
 
 const useMyStore = create(

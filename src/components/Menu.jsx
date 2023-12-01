@@ -75,7 +75,7 @@ const Menu = () => {
                 </div>
             </div>
 
-            <div className="checklist m-6 flex flex-col items-left">
+            {/* <div className="checklist m-6 flex flex-col items-left">
                 <div className="my-3">
                     <p className="font-bold text-lg">Stages</p>
                     {Object.keys(checklist.stages).map((stage) => (
@@ -125,7 +125,7 @@ const Menu = () => {
                     ))}
                 </div>
 
-            </div>
+            </div> */}
         </div>
     );
 };

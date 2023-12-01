@@ -51,13 +51,15 @@ const Canvas = () => {
                 />
             ))}
 
-            <div className='flex flex-col right-[1%] bottom-[1%] absolute'>
+            <div className='flex flex-col bottom-[1%] absolute'>
                 <p className='font-bold text-lg'>Templates:</p>
                 <button onClick={() => addTemplate("empty")} className='bg-red-400 rounded-lg p-2 my-2'>Clear</button>
                 <button onClick={() => addTemplate("8-stage")} className='bg-cardet-gray rounded-lg p-2 my-2'>8 Stages</button>
                 <button onClick={() => addTemplate("6-stage")} className='bg-sage rounded-lg p-2 my-2'>6 Stages</button>
                 <button onClick={() => addTemplate("3-stage")} className='bg-citron rounded-lg p-2 my-2'>3 Stages</button>
-                <br></br>
+            </div>
+
+            <div className='flex flex-col right-[1%] bottom-[1%] absolute'>
                 <p className='font-bold text-lg'>Stages:</p>
                 <button onClick={() => addCardData("problem")} className='bg-problem rounded-lg p-2 my-2'>Problem</button>
                 <button onClick={() => addCardData("task")} className='bg-task rounded-lg p-2 my-2'>Task</button>
@@ -68,7 +70,6 @@ const Canvas = () => {
                 <button onClick={() => addCardData("deploy")} className='bg-deploy rounded-lg p-2 my-2'>Deploy</button>
                 <button onClick={() => addCardData("feedback")} className='bg-feedback rounded-lg p-2 my-2'>Feedback</button>
             </div>
-
         </div >
 
         // </DndProvider>

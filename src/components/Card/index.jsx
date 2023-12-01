@@ -66,6 +66,8 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
     store.cardsData.filter((cardData) => cardData.id === id)[0]
   ), shallow)
 
+  const deleteCard = useMyStore((store) => store.deleteCard)
+
   const setCardPosition = useMyStore((store) => (
     store.setCardPosition
   ))
@@ -122,7 +124,7 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
           <React.Fragment>
             <div className="absolute left-0 top-[-25px]">
               <button
-                onClick={() => { }}
+                onClick={() => {deleteCard(id)}}
                 className="ml-auto text-sm"
               >
                 ❌
