@@ -30,10 +30,7 @@ import { getDatabase } from "firebase/database";
 // App Check
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
+// AI-LEGO's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCJ8cbkQs2Avk8EsNZhAlk0j4mhGGFNcus",
