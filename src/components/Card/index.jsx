@@ -1,9 +1,9 @@
 // Card.jsx
 import React, { useRef, useState } from "react";
-// import { ItemTypes } from "../Constants";
+import { ItemTypes } from "../Constants";
 import Draggable from "react-draggable";
 import Xarrow from "react-xarrows";
-import useMyStore from "../../context";
+import useMyStore from "../../contexts/context";
 import { shallow } from "zustand/shallow";
 import Popup from "reactjs-popup";
 import { v4 as uuidv4 } from "uuid";
@@ -16,26 +16,15 @@ const getStageColor = (id) => {
 const ConnectPointsWrapper = ({ boxId, handler, dragRef, boxRef }) => {
   const ref1 = useRef();
 
-  const [hovered, setHovered] = useState(false);
   const [position, setPosition] = useState({});
   const [beingDragged, setBeingDragged] = useState(false);
 
   return (
     <React.Fragment>
       <div
-        className={`connectPoint ${
-          hovered
-            ? "top-[calc(50%-9.5px)] right-[-22px]"
-            : "top-[calc(50%-7.5px)] right-[-20px]"
-        } absolute ${hovered ? "w-4 h-4" : "w-3 h-3"} rounded-full bg-sky-500`}
+        className="connectPoint top-[calc(50%-7.5px)] right-0 absolute w-4 h-4 rounded-full bg-black"
         style={{
           ...position,
-        }}
-        onMouseEnter={() => {
-          setHovered(true);
-        }}
-        onMouseLeave={() => {
-          setHovered(false);
         }}
         draggable
         onMouseDown={(e) => e.stopPropagation()}
@@ -74,11 +63,6 @@ const ConnectPointsWrapper = ({ boxId, handler, dragRef, boxRef }) => {
 
 export default function Card({ id, handleDelete, text, handler, boxId }) {
   // const [text, setText] = useState("");
-  const isSelected = useCanvasStore(
-    (store) => store.selectedCardId === id,
-    shallow
-  );
-  const canvasActions = useCanvasStore((store) => store.actions);
 
   const cardData = useMyStore(
     (store) => store.cardsData.filter((cardData) => cardData.id === id)[0],
@@ -172,21 +156,6 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
     );
   };
 
-  const handleClick = (e) => {
-    switch (e.detail) {
-      case 1:
-        isSelected
-          ? canvasActions.unselectCard()
-          : canvasActions.selectCardId(id);
-        break;
-      case 2:
-        isSelected
-          ? canvasActions.unselectCard()
-          : canvasActions.selectCardId(id);
-        break;
-    }
-  };
-
   return (
     <Draggable
       ref={dragRef}
@@ -197,16 +166,10 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
       }}
     >
       <div
-        className={`rounded-lg flex flex-col bg-white w-40 h-28 ${
-          isSelected ? "outline outline-offset-1 outline-1 outline-sky-500" : ""
-        } z-10`}
+        className="rounded-lg flex flex-col bg-white w-40 h-28"
         id={boxId}
         ref={boxRef}
         onDragOver={(e) => e.preventDefault()}
-        onKeyDown={(e) => {
-          console.log(e.key);
-        }}
-        onClick={handleClick}
         onDrop={(e) => {
           console.log(e.dataTransfer.getData("arrow"));
           if (e.dataTransfer.getData("arrow") != boxId) {

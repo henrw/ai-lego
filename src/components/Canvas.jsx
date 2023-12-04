@@ -2,7 +2,7 @@ import React from "react";
 import Card from "./Card";
 import Column from "./Column";
 import { useState } from "react";
-import useMyStore from "../context";
+import useMyStore from "../contexts/context";
 import Xarrow from "react-xarrows";
 
 const Canvas = () => {
