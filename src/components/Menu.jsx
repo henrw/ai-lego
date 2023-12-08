@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import app from "../firebase";
+import { getAuth, signOut } from 'firebase/auth';
 
 const Menu = () => {
     // State for each checklist item
@@ -28,6 +30,17 @@ const Menu = () => {
             bvi: false,
         },
     });
+
+    const handleSignOut = () => {
+        const auth = getAuth();
+        signOut(auth).then(() => {
+            // Sign-out successful.
+            console.log('User signed out.');
+        }).catch((error) => {
+            // An error happened during the sign-out.
+            console.error('Error signing out:', error);
+        });
+    }
 
     // Function to toggle the checked state
     const toggleCheck = (category, item) => {
@@ -73,6 +86,11 @@ const Menu = () => {
                         <p className="text-gray-500">Data Aquisition - 1h ago</p>
                     </div>
                 </div>
+            </div>
+            <div className="m-6 flex justify-center">
+                <button onClick={handleSignOut} className="bg-red-400 rounded-lg p-2">
+                    Sign Out
+                </button>
             </div>
 
             {/* <div className="checklist m-6 flex flex-col items-left">

@@ -45,6 +45,10 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-if (location.hostname === "localhost") {
-  console.log("localhost detected!");
-}
+// if (location.hostname === "localhost") {
+//   console.log("localhost detected!");
+// }
+
+export const auth = getAuth(app);
+
+export default app;
