@@ -1,18 +1,67 @@
 import { produce } from "immer";
-import { create } from "zustand";
+// Import the suggested function from Zustand
+import { createWithEqualityFn } from "zustand/traditional";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
 
 const cardsDatatemplates = {
   "8-stage": {
     cardsData: [
-      { id: "problem-0", descr: "", details: {}, position: { x: 100, y: 0 } },
-      { id: "task-0", descr: "", details: {}, position: { x: 200, y: 0 } },
-      { id: "data-0", descr: "", details: {}, position: { x: 300, y: 0 } },
-      { id: "model-0", descr: "", details: {}, position: { x: 400, y: 0 } },
-      { id: "train-0", descr: "", details: {}, position: { x: 500, y: 0 } },
-      { id: "test-0", descr: "", details: {}, position: { x: 600, y: 0 } },
-      { id: "deploy-0", descr: "", details: {}, position: { x: 700, y: 0 } },
-      { id: "feedback-0", descr: "", details: {}, position: { x: 800, y: 0 } },
+      {
+        id: "problem-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 100, y: 0 },
+      },
+      {
+        id: "task-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 200, y: 0 },
+      },
+      {
+        id: "data-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 300, y: 0 },
+      },
+      {
+        id: "model-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 400, y: 0 },
+      },
+      {
+        id: "train-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 500, y: 0 },
+      },
+      {
+        id: "test-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 600, y: 0 },
+      },
+      {
+        id: "deploy-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 700, y: 0 },
+      },
+      {
+        id: "feedback-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 800, y: 0 },
+      },
     ],
     arrows: [
       { start: "problem-0", end: "task-0" },
@@ -30,28 +79,44 @@ const cardsDatatemplates = {
         id: "problemDef-0",
         descr: "",
         details: {},
+        prompt: "",
         position: { x: 100, y: 0 },
       },
-      { id: "data-0", descr: "", details: {}, position: { x: 200, y: 0 } },
+      {
+        id: "data-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 200, y: 0 },
+      },
       {
         id: "modelDevelopment-0",
         descr: "",
         details: {},
+        prompt: "",
         position: { x: 300, y: 0 },
       },
       {
         id: "modelEvaluation-0",
         descr: "",
         details: {},
+        prompt: "",
         position: { x: 400, y: 0 },
       },
       {
         id: "deployment-0",
         descr: "",
         details: {},
+        prompt: "",
         position: { x: 500, y: 0 },
       },
-      { id: "MLOps-0", descr: "", details: {}, position: { x: 600, y: 0 } },
+      {
+        id: "MLOps-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 600, y: 0 },
+      },
     ],
     arrows: [
       { start: "problemDef-0", end: "data-0" },
@@ -63,9 +128,27 @@ const cardsDatatemplates = {
   },
   "3-stage": {
     cardsData: [
-      { id: "design-0", descr: "", details: {}, position: { x: 100, y: 0 } },
-      { id: "develop-0", descr: "", details: {}, position: { x: 200, y: 0 } },
-      { id: "deploy-0", descr: "", details: {}, position: { x: 300, y: 0 } },
+      {
+        id: "design-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 100, y: 0 },
+      },
+      {
+        id: "develop-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 200, y: 0 },
+      },
+      {
+        id: "deploy-0",
+        descr: "",
+        details: {},
+        prompt: "",
+        position: { x: 300, y: 0 },
+      },
     ],
     arrows: [
       { start: "design-0", end: "develop-0" },
@@ -74,33 +157,43 @@ const cardsDatatemplates = {
   },
 };
 
+const prompts = {
+  problem: "Description for the stage",
+  task: "Description for that stage",
+  data: "Description for Task Definition stage",
+  model: "Description for Task Definition stage",
+  train: "Description for Task Definition stage",
+  test: "Description for Task Definition stage",
+  deploy: "Description for Task Definition stage",
+  feedback: "Description for Task Definition stage",
+};
+
 const myStore = (set) => ({
-  cardsData: [
-    // { id: 'problem-0', descr: 'Problem Formulation', details: {}, position: { x: 0, y: 0 } },
-    // { id: 'task-0', descr: 'Task Definition', details: {}, position: { x: 0, y: 0 } },
-    // { id: 'data-0', descr: 'Dataset Construction', details: {}, position: { x: 0, y: 0 } },
-    // { id: 'model-0', descr: 'Model Definition', details: {}, position: { x: 0, y: 0 } },
-    // { id: 'train-0', descr: 'Training Process', details: {}, position: { x: 0, y: 0 } },
-    // { id: 'test-0', descr: 'Testing Process', details: {}, position: { x: 0, y: 0 } },
-    // { id: 'deploy-0', descr: 'Deployment', details: {}, position: { x: 0, y: 0 } },
-    // { id: 'feedback-0', descr: 'Feedback', details: {}, position: { x: 0, y: 0 } },
-  ],
+  cardsData: [],
   arrows: [],
   uuid: 0,
   addCardData: (stage) =>
     set(
       produce((store) => {
         store.uuid += 1;
+        const prompt = prompts[stage] || "No prompt available";
+        // Calculate new position
+        const newPosition = {
+          x: 110 + store.cardsData.length * 280, // Adjust 10 to your spacing preference
+          y: 0, // Adjust 5 to your vertical spacing preference
+        };
         store.cardsData.push({
           id: stage + "-" + store.uuid,
+          prompt: prompt,
           descr: "",
           details: {},
-          position: { x: 0, y: 0 },
+          position: newPosition,
         });
       }),
       false,
       "addCardData"
     ),
+
   // Add this action to your store
   updateCardText: (id, newText) =>
     set(
@@ -155,7 +248,7 @@ const myStore = (set) => ({
     }),
 });
 
-const useMyStore = create(
+const useMyStore = createWithEqualityFn(
   // persist(
   devtools(myStore)
   // {name: "myStore"}

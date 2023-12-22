@@ -1,39 +1,47 @@
-import { createRoot } from 'react-dom/client';
-import {
-  BrowserRouter,
-  Routes,
-  Route
-} from "react-router-dom";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 import App from "./App";
 import Knowledge from "./routes/Knowledge";
+import Home from "./authentication/Home";
 import Navbar from "./components/Navbar";
-import Login from './authentication/Login';
-import SignUp from './authentication/SignUp';
-import { AuthProvider } from './authentication/Auth';
-import "./index.css"
-import PrivateRoute from './authentication/PrivateRoute';
+import Login from "./authentication/Login";
+import SignUp from "./authentication/SignUp";
+import Canvas from "./components/Canvas";
+import { UserAuthContextProvider } from "./authentication/UserAuthContext";
+import PrivateRoute from "./authentication/PrivateRoute";
+import "./index.css";
 
-const container = document.getElementById('root');
+const container = document.getElementById("root");
 const root = createRoot(container);
+
 root.render(
-  <AuthProvider>
+  <UserAuthContextProvider>
     <BrowserRouter>
       <Navbar />
       <Routes>
+        {/* Default route for unauthenticated users */}
+        <Route path="/" element={<Login />} />
+
+        {/* Protected route for authenticated users */}
         <Route
-          path="/"
+          path="/app"
           element={
             <PrivateRoute>
               <App />
             </PrivateRoute>
           }
         />
-        <Route path="/login" element={<Login />} />
+
+        {/* Other routes */}
+        <Route path="/canvas" element={<Canvas />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/knowledge" element={<Knowledge />} />
+        {/* ... other routes if any */}
       </Routes>
     </BrowserRouter>
-  </AuthProvider>
-
+  </UserAuthContextProvider>
 );

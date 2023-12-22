@@ -48,7 +48,7 @@ const analytics = getAnalytics(app);
 // if (location.hostname === "localhost") {
 //   console.log("localhost detected!");
 // }
+// Initialize Firebase Auth
+const auth = getAuth(app);
 
-export const auth = getAuth(app);
-
-export default app;
+export { auth, app };

@@ -5,6 +5,14 @@ import { DndContext } from "@dnd-kit/core";
 
 import { useDroppable } from "@dnd-kit/core";
 import { useDraggable } from "@dnd-kit/core";
+import { Container, Row, Col } from "react-bootstrap";
+import { Routes, Route } from "react-router-dom";
+import "./App.css";
+import Home from "./authentication/Home";
+import Login from "./authentication/Login";
+import SignUp from "./authentication/SignUp";
+import ProtectedRoute from "./authentication/PrivateRoute";
+import { UserAuthContextProvider } from "./authentication/UserAuthContext";
 
 function Droppable(props) {
   const { isOver, setNodeRef } = useDroppable({
@@ -43,12 +51,7 @@ const App = () => {
   const draggableMarkup = <Draggable>Drag me</Draggable>;
   return (
     <div className="flex h-[calc(100vh-112px)]">
-      <div className="flex-none w-fit">
-        <Menu />
-      </div>
-      <div className="flex-auto bg-gray-200 p-4">
-        <Canvas />
-      </div>
+      <Canvas />
     </div>
   );
 };
