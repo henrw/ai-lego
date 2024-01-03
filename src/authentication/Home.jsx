@@ -18,11 +18,16 @@ const Home = () => {
         Thank you for visiting! <br />
         {user && user.email}
       </div>
-      <div className="d-grid gap-2">
-        <Button variant="primary" onClick={handleLoginRedirect}>
-          Log In
-        </Button>
-      </div>
+      {!user && (
+        <div className="d-flex justify-center">
+          <button
+            onClick={handleLoginRedirect}
+            className="border border-blue-500 hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-1 px-2 hover:border-transparent rounded"
+          >
+            Log In
+          </button>
+        </div>
+      )}
     </>
   );
 };

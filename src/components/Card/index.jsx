@@ -266,7 +266,6 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
         // setHasComments(comments.length > 0);
       }
     } else {
-      // If the input is not a UUID, we assume it's regular text and handle saving a new top-level comment
       const text = input;
       if (text.trim()) {
         const newComment = {
@@ -440,7 +439,6 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
             ))}
 
           <Popup open={open} closeOnDocumentClick onClose={closeModal}>
-            {/* Popup content here, you can use the same structure as the given Popup code */}
             {(close) => (
               <div className=" w-[500px] p-3 bg-white rounded shadow-lg border-8 border-gray-200 text-gray-700 ">
                 <button
@@ -454,7 +452,7 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
                 >
                   {stageName}
                 </div>
-                {/* <div className="mb-4">{text}</div> */}
+
                 <div className="mb-4 text-sm overflow-auto">{text}</div>
                 {/* Comment section */}
 

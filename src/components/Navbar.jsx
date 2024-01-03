@@ -58,7 +58,7 @@ const Navbar = () => {
             >
               Contact us
             </Link>
-            <div className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200">
+            <div className="text-lg text-gray-700 hover:text-white transition-colors duration-200">
               <button
                 onClick={handleSignOut}
                 className="bg-red-400 rounded-lg px-1"
