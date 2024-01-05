@@ -16,7 +16,7 @@ const Login = () => {
     setError("");
     try {
       await logIn(email, password);
-      navigate("/app");
+      navigate("/home");
     } catch (err) {
       setError(err.message);
     }
@@ -26,7 +26,7 @@ const Login = () => {
     e.preventDefault();
     try {
       await googleSignIn();
-      navigate("/app");
+      navigate("/home");
     } catch (error) {
       console.log(error.message);
     }
@@ -35,7 +35,7 @@ const Login = () => {
   return (
     <div className="flex h-[calc(100vh-112px)]">
       <div className="m-auto flex flex-col items-center ">
-        <div className="text-xl font-bold m-2">Firebase/ React Auth Login</div>
+        <div className="text-2xl font-bold m-7">Login</div>
 
         {error && <div className="text-red-500">{error}</div>}
 
@@ -84,7 +84,7 @@ const Login = () => {
           Don't have an account?{" "}
           <Link to="/signup" className="text-blue-500">
             {" "}
-            Sign up
+            Join for Free
           </Link>
         </div>
       </div>

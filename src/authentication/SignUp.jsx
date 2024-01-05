@@ -16,7 +16,7 @@ const SignUp = () => {
     setError("");
     try {
       await signUp(email, password);
-      navigate("/");
+      navigate("/home");
     } catch (err) {
       setError(err.message);
     }
@@ -24,11 +24,20 @@ const SignUp = () => {
   return (
     <div className="flex h-[calc(100vh-112px)]">
       <div className="m-auto flex flex-col items-center ">
-        <div className="text-xl font-bold m-2">Firebase/ React Auth Signup</div>
+        <div className="text-2xl font-bold m-7">Signup</div>
 
         {error && <div className="text-red-500">{error}</div>}
 
         <form onSubmit={handleSubmit} className="flex flex-col">
+          <label className="flex flex-row my-1">
+            <div className="mr-auto px-2">Full Name</div>
+            <input
+              type=""
+              placeholder="Enter Your Full Name"
+              onChange={(e) => setEmail(e.target.value)}
+              className="px-2 py-1 border rounded"
+            />
+          </label>
           <label className="flex flex-row my-1">
             <div className="mr-auto px-2">Email</div>
             <input
@@ -43,7 +52,7 @@ const SignUp = () => {
             <div className="mr-auto px-2">Password</div>
             <input
               type="password"
-              placeholder="Password"
+              placeholder="Create Password"
               onChange={(e) => setPassword(e.target.value)}
               className="px-2 py-1 border rounded"
             />

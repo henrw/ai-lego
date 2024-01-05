@@ -23,8 +23,8 @@ const Canvas = () => {
   console.log("Canvas rendering");
 
   return (
-    // <DndProvider backend={HTML5Backend}>
-    <div className="flex flex-row ">
+    // <div className="flex flex-row ">
+    <div className="pt-16 relative">
       {cardsData.map((card) => (
         <Card
           id={card.id}

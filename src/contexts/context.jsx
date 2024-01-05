@@ -10,21 +10,21 @@ const cardsDatatemplates = {
         id: "problem-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 100, y: 0 },
       },
       {
         id: "task-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 200, y: 0 },
       },
       {
         id: "data-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 300, y: 0 },
       },
       {
@@ -38,28 +38,26 @@ const cardsDatatemplates = {
         id: "train-0",
         descr: "",
         details: {},
-        prompt: "",
         position: { x: 500, y: 0 },
       },
       {
         id: "test-0",
         descr: "",
         details: {},
-        prompt: "",
         position: { x: 600, y: 0 },
       },
       {
         id: "deploy-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 700, y: 0 },
       },
       {
         id: "feedback-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 800, y: 0 },
       },
     ],
@@ -79,42 +77,42 @@ const cardsDatatemplates = {
         id: "problemDef-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 100, y: 0 },
       },
       {
         id: "data-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 200, y: 0 },
       },
       {
         id: "modelDevelopment-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 300, y: 0 },
       },
       {
         id: "modelEvaluation-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 400, y: 0 },
       },
       {
         id: "deployment-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 500, y: 0 },
       },
       {
         id: "MLOps-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 600, y: 0 },
       },
     ],
@@ -132,21 +130,21 @@ const cardsDatatemplates = {
         id: "design-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 100, y: 0 },
       },
       {
         id: "develop-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 200, y: 0 },
       },
       {
         id: "deploy-0",
         descr: "",
         details: {},
-        prompt: "",
+
         position: { x: 300, y: 0 },
       },
     ],
@@ -158,35 +156,64 @@ const cardsDatatemplates = {
 };
 
 const prompts = {
-  problem: "Description for the stage",
-  task: "Description for that stage",
-  data: "Description for Task Definition stage",
-  model: "Description for Task Definition stage",
-  train: "Description for Task Definition stage",
-  test: "Description for Task Definition stage",
-  deploy: "Description for Task Definition stage",
-  feedback: "Description for Task Definition stage",
+  problem:
+    "Brief the problem or challenge that can be solved by AI in simple words, highlighting its significance and potential impact on target users or stakeholders.",
+  task: "Explain how AI focuses on the specific task that aims to solve the problem.",
+  data: "Describe how the data for training the AI system is collected and prepared in plain language, emphasizing the data preprocessing and any feature engineering technologies that are applied to the raw data.",
+  model:
+    "Explain what AI model architecture and algorithms are being used and  and their respective roles in simple terms.",
+  train:
+    "Describe how the AI model learns from the data, and clarify the process of how it improves its performance.",
+  test: "Explain how the AI model is evaluated and assessed for its effectiveness and accuracy, using plain words to highlight the testing process.",
+  deploy:
+    "Describe how the AI system is deployed in practical use, emphasizing the benefits and potential impact on users or stakeholders.",
+  feedback:
+    "Explain how feedback is gathered from users or stakeholders to improve the AI system and highlight how it helps the iteration of AI development.",
 };
 
 const myStore = (set) => ({
   cardsData: [],
   arrows: [],
   uuid: 0,
+  // addCardData: (stage) =>
+  //   set(
+  //     produce((store) => {
+  //       store.uuid += 1;
+  //       const prompt = prompts[stage] || "No prompt available";
+  //       // Calculate new position
+  //       const newPosition = {
+  //         x: 110 + store.cardsData.length * 100, // Adjust 10 to your spacing preference
+  //         y: 0, // Adjust 5 to your vertical spacing preference
+  //       };
+  //       store.cardsData.push({
+  //         id: stage + "-" + store.uuid,
+  //         prompt: prompt,
+  //         descr: "",
+  //         details: {},
+  //         position: newPosition,
+  //       });
+  //     }),
+  //     false,
+  //     "addCardData"
+  //   ),
   addCardData: (stage) =>
     set(
       produce((store) => {
+        // Increment the UUID for the new card
         store.uuid += 1;
-        const prompt = prompts[stage] || "No prompt available";
-        // Calculate new position
-        const newPosition = {
-          x: 110 + store.cardsData.length * 280, // Adjust 10 to your spacing preference
-          y: 0, // Adjust 5 to your vertical spacing preference
-        };
+        // Find the rightmost card's x position
+        const rightmostX = store.cardsData.reduce(
+          (max, card) => Math.max(card.position.x, max),
+          0
+        );
+        // Calculate the new card's position, 150 units to the right of the rightmost card
+        const newPosition = { x: 0 + rightmostX + 170, y: 0 };
+        // Add the new card to the cardsData array
         store.cardsData.push({
-          id: stage + "-" + store.uuid,
-          prompt: prompt,
+          id: `${stage}-${store.uuid}`,
           descr: "",
           details: {},
+          prompt: prompts[stage] || "No prompt available",
           position: newPosition,
         });
       }),
@@ -228,7 +255,17 @@ const myStore = (set) => ({
     set(
       produce((store) => {
         if (cardsDatatemplates[type]) {
-          store.cardsData = cardsDatatemplates[type].cardsData;
+          const updatedCardsData = cardsDatatemplates[type].cardsData.map(
+            (card) => {
+              const stageName = card.id.split("-")[0]; // Extract stage name from the id
+              return {
+                ...card,
+                prompt: prompts[stageName] || "No prompt available", // Assign the corresponding prompt
+              };
+            }
+          );
+
+          store.cardsData = updatedCardsData;
           store.arrows = cardsDatatemplates[type].arrows;
         } else {
           store.cardsData = [];
@@ -236,6 +273,7 @@ const myStore = (set) => ({
         }
       })
     ),
+
   deleteCardAndArrows: (cardId, boxId) =>
     set((state) => {
       // Filter out the card from cardsData

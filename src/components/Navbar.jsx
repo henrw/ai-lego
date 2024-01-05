@@ -1,10 +1,11 @@
 import React from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { useUserAuth } from "../authentication/UserAuthContext";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const Navbar = () => {
   const { user } = useUserAuth();
+  const location = useLocation();
 
   const handleSignOut = () => {
     const auth = getAuth();
@@ -16,9 +17,10 @@ const Navbar = () => {
         console.error("Error signing out:", error);
       });
   };
+  const isOnCanvas = location.pathname === "/canvas";
 
   return (
-    <nav className="flex items-center justify-between bg-gray-200 py-2 px-4 shadow-md">
+    <nav className="fixed z-50 min-w-full flex items-center justify-between bg-gray-200 py-2 px-4 shadow-md">
       <div className="flex items-center">
         {/* Wrap the image in a Link component */}
         <Link to="/home">
@@ -46,12 +48,12 @@ const Navbar = () => {
             >
               Knowledge Base
             </Link>
-            <Link
+            {/* <Link
               to="/projects"
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
               Projects
-            </Link>
+            </Link> */}
             <Link
               to="/contact"
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
@@ -68,11 +70,12 @@ const Navbar = () => {
             </div>
           </>
         ) : (
+          // Render "Get Registered" if the user is on the canvas page, otherwise "Test Around Without Login"
           <Link
-            to="/canvas"
+            to={isOnCanvas ? "/home" : "/canvas"}
             className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
           >
-            Test Around Without Login
+            {isOnCanvas ? "Get Registered" : "Test Around Without Login"}
           </Link>
         )}
       </div>
