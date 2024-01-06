@@ -1,10 +1,13 @@
+// SignUp.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Form, Alert } from "react-bootstrap";
 import { Button } from "react-bootstrap";
 import { useUserAuth } from "./UserAuthContext";
+import { db } from "../firebase"; // Ensure you have this import
+import { doc, setDoc } from "firebase/firestore"; // Import Firestore document set function
 
 const SignUp = () => {
+  const [fullName, setFullName] = useState(""); // Add state for full name
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [password, setPassword] = useState("");
@@ -15,8 +18,19 @@ const SignUp = () => {
     e.preventDefault();
     setError("");
     try {
-      await signUp(email, password);
-      navigate("/home");
+      const response = await signUp(email, password);
+      // Create a Firestore user document
+      await setDoc(doc(db, "users", response.user.uid), {
+        fullName, // Save the full name
+        email, // Save the email
+        // Initialize other fields with default values or empty strings
+        occupation: "",
+        experienceLevel: "",
+        employer: "",
+        department: "",
+        profile_picture: "",
+      });
+      navigate("/home", { state: { newUser: true } });
     } catch (err) {
       setError(err.message);
     }
@@ -32,9 +46,9 @@ const SignUp = () => {
           <label className="flex flex-row my-1">
             <div className="mr-auto px-2">Full Name</div>
             <input
-              type=""
+              type="text"
               placeholder="Enter Your Full Name"
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => setFullName(e.target.value)}
               className="px-2 py-1 border rounded"
             />
           </label>

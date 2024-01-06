@@ -51,5 +51,5 @@ const analytics = getAnalytics(app);
 // Initialize Firebase Auth
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-export { auth, app, db };
+const storage = getStorage(app);
+export { auth, app, db, storage };
