@@ -70,13 +70,28 @@ const Navbar = () => {
             </div>
           </>
         ) : (
-          // Render "Get Registered" if the user is on the canvas page, otherwise "Test Around Without Login"
-          <Link
-            to={isOnCanvas ? "/home" : "/canvas"}
-            className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
-          >
-            {isOnCanvas ? "Get Registered" : "Test Around Without Login"}
-          </Link>
+          <>
+            {/* Render "Get Registered" if the user is on the canvas page,
+            otherwise "Test Around Without Login" */}
+            <Link
+              to="/about"
+              className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
+            >
+              About us
+            </Link>
+            <Link
+              to="/contact"
+              className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
+            >
+              Contact us
+            </Link>
+            <Link
+              to={isOnCanvas ? "/home" : "/canvas"}
+              className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
+            >
+              {isOnCanvas ? "Get Registered" : "Test Around Without Login"}
+            </Link>
+          </>
         )}
       </div>
     </nav>
