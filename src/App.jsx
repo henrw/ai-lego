@@ -8,7 +8,7 @@ import { useDraggable } from "@dnd-kit/core";
 import { Container, Row, Col } from "react-bootstrap";
 import { Routes, Route } from "react-router-dom";
 import "./App.css";
-import Home from "./authentication/Home";
+import Home from "./components/Home";
 import Login from "./authentication/Login";
 import SignUp from "./authentication/SignUp";
 import ProtectedRoute from "./authentication/PrivateRoute";

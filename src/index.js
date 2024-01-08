@@ -5,11 +5,12 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 import App from "./App";
 import Knowledge from "./routes/Knowledge";
-import Home from "./authentication/Home";
+import Home from "./components/Home";
 import Navbar from "./components/Navbar";
 import Login from "./authentication/Login";
 import SignUp from "./authentication/SignUp";
 import Canvas from "./components/Canvas";
+import Contact from "./components/Contact";
 import { UserAuthContextProvider } from "./authentication/UserAuthContext";
 import PrivateRoute from "./authentication/PrivateRoute";
 import "./index.css";
@@ -40,7 +41,7 @@ root.render(
         <Route path="/home" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/knowledge" element={<Knowledge />} />
-        {/* ... other routes if any */}
+        <Route path="/contact" element={<Contact />} />
       </Routes>
     </BrowserRouter>
   </UserAuthContextProvider>
