@@ -1,11 +1,31 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { getAuth, signOut } from "firebase/auth";
 import { useUserAuth } from "../authentication/UserAuthContext";
 import { Link, useLocation } from "react-router-dom";
-
+import { FaUserCircle } from "react-icons/fa";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 const Navbar = () => {
   const { user } = useUserAuth();
   const location = useLocation();
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const [userDetails, setUserDetails] = useState({});
+
+  // Fetch user details from Firestore
+  useEffect(() => {
+    if (user) {
+      const fetchUserDetails = async () => {
+        const userDocRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userDocRef);
+        if (docSnap.exists()) {
+          setUserDetails(docSnap.data());
+        } else {
+          console.log("No such document!");
+        }
+      };
+      fetchUserDetails();
+    }
+  }, [user]);
 
   const handleSignOut = () => {
     const auth = getAuth();
@@ -18,11 +38,11 @@ const Navbar = () => {
       });
   };
   const isOnCanvas = location.pathname === "/canvas";
+  const toggleDropdown = () => setDropdownVisible(!dropdownVisible);
 
   return (
     <nav className="fixed z-50 min-w-full flex items-center justify-between bg-gray-200 py-2 px-4 shadow-md">
       <div className="flex items-center">
-        {/* Wrap the image in a Link component */}
         <Link to="/home">
           <img src="/logo.svg" alt="logo" width="150" className="mr-10" />
         </Link>
@@ -48,18 +68,55 @@ const Navbar = () => {
             >
               Knowledge Base
             </Link>
-            {/* <Link
-              to="/projects"
-              className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
-            >
-              Projects
-            </Link> */}
             <Link
               to="/contact"
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
               Contact us
             </Link>
+            <div className="relative">
+              <button onClick={toggleDropdown} className="focus:outline-none">
+                {userDetails.profile_picture ? (
+                  <img
+                    src={userDetails.profile_picture}
+                    alt="Profile"
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <FaUserCircle size="2em" color="#A9A9A9" />
+                )}
+              </button>
+              {dropdownVisible && (
+                <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-xl z-20">
+                  <div className="px-4 py-2 flex flex-col items-center">
+                    <img
+                      src={userDetails.profile_picture}
+                      alt="Profile Large"
+                      className="w-24 h-24 rounded-full"
+                    />
+                    <div className="text-sm">{userDetails.fullName}</div>
+                    <div className="text-xs text-gray-500">
+                      Occupation: {userDetails.occupation}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Permission: {userDetails.permission || "Edit/Review"}
+                    </div>
+                  </div>
+                  <div className="px-4 py-2">
+                    <div className="text-xs font-bold">Team Members</div>
+                    {/* Map through team members here */}
+                  </div>
+                  <div className="px-4 py-2 flex flex-col">
+                    <button className="text-sm w-full text-left">
+                      Edit profile information
+                    </button>
+                    <button className="text-sm w-full text-left mt-2">
+                      View/edit document access
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="text-lg text-gray-700 hover:text-white transition-colors duration-200">
               <button
                 onClick={handleSignOut}
@@ -85,6 +142,25 @@ const Navbar = () => {
             >
               Contact us
             </Link>
+            {/* User profile dropdown */}
+            {isOnCanvas && (
+              <div className="relative">
+                <button onClick={toggleDropdown} className="focus:outline-none">
+                  <FaUserCircle size="2em" />
+                </button>
+                {dropdownVisible && (
+                  <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-xl z-20">
+                    <div className="px-4 py-2 flex flex-col items-center">
+                      <FaUserCircle className="w-24 h-24 text-gray-300" />
+                      <div className="text-sm">{"Guest"}</div>
+                      <div className="text-xs text-gray-500">
+                        Permission: Edit/Review
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <Link
               to={isOnCanvas ? "/home" : "/canvas"}
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
