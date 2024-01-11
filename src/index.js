@@ -10,6 +10,7 @@ import Navbar from "./components/Navbar";
 import Login from "./authentication/Login";
 import SignUp from "./authentication/SignUp";
 import Canvas from "./components/Canvas";
+import About from "./components/About";
 import Contact from "./components/Contact";
 import { UserAuthContextProvider } from "./authentication/UserAuthContext";
 import PrivateRoute from "./authentication/PrivateRoute";
@@ -42,6 +43,7 @@ root.render(
         <Route path="/signup" element={<SignUp />} />
         <Route path="/knowledge" element={<Knowledge />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/about" element={<About />} />
       </Routes>
     </BrowserRouter>
   </UserAuthContextProvider>
