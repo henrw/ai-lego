@@ -56,12 +56,12 @@ const Contact = () => {
             style={emojiStyle}
             role="img"
             aria-label="email"
-            onClick={() => copyToClipboard("hongs@andrew.cmu.edu")}
+            onClick={() => copyToClipboard("xxxxx@andrew.cmu.edu")}
           >
             📧🧑🏻‍🔬
           </span>
           Primary Researcher:{" "}
-          <a href="mailto:hongs@andrew.cmu.edu" style={contactDetailsStyle}>
+          <a href="mailto:xxxxx@andrew.cmu.edu" style={contactDetailsStyle}>
             hongs@andrew.cmu.edu
           </a>
         </p>
