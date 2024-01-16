@@ -128,6 +128,18 @@ const Canvas = () => {
         >
           Feedback
         </button>
+        <button
+          onClick={() => addCardData("➕")}
+          className="bg-➕ rounded-lg p-0.5 my-1"
+        >
+          ➕
+        </button>
+        {/* <button
+          onClick={() => addCardData("design")}
+          className="bg-design rounded-lg p-0.5 my-1"
+        >
+          Design
+        </button> */}
       </div>
     </div>
 
