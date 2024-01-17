@@ -66,6 +66,8 @@ const colorClasses = {
   test: "test",
   deploy: "deploy",
   feedback: "feedback",
+  design: "design",
+  develop: "develop",
 };
 
 const getBorderColorClassFromId = (id) => {
@@ -223,9 +225,6 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
     );
   };
 
-  // Add a Tailwind CSS class for fixed width and flexible height
-  const cardClass = "relative bg-gray-200 rounded shadow p-2 w-60";
-
   // This function handles saving new comments and editing existing ones.
   const handleSaveComment = (input) => {
     // Regular expression to check if the input is a UUID
@@ -233,59 +232,57 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     const isUuid = uuidRegex.test(input);
 
-    // If the input is a UUID, we assume it's a boxId and handle saving a comment linked to a specific comment box
+    // Editing or Adding new comment from a comment box
     if (isUuid) {
       const boxIndex = commentBoxes.findIndex((box) => box.id === input);
-      if (boxIndex === -1) return; // If boxId is not found, exit the function
+      if (boxIndex === -1) return;
 
       const box = commentBoxes[boxIndex];
-      if (box && box.text.trim()) {
-        if (box.isEditing && box.commentId) {
-          // Editing existing comment
-          setComments((currentComments) =>
-            currentComments.map((comment) =>
-              comment.id === box.commentId
-                ? { ...comment, text: box.text }
-                : comment
-            )
-          );
-        } else {
-          // Saving new comment linked to a comment box
-          const newComment = {
-            id: uuidv4(),
-            text: box.text,
-            parentId: null,
-            childComments: [],
-          };
-          setComments((currentComments) => [...currentComments, newComment]);
-        }
-        // Clear the text in the comment box and reset its editing state
+      if (!box.text.trim()) return;
+
+      if (box.commentId) {
+        // Editing existing comment
+        setComments((currentComments) =>
+          currentComments.map((comment) =>
+            comment.id === box.commentId
+              ? { ...comment, text: box.text }
+              : comment
+          )
+        );
+      } else {
+        // Adding new comment linked to a comment box
+        const newComment = {
+          id: uuidv4(),
+          text: box.text,
+          parentId: null,
+          childComments: [],
+        };
+        setComments((currentComments) => [...currentComments, newComment]);
+        // Update the comment box to include the comment ID
         const updatedBoxes = [...commentBoxes];
-        updatedBoxes[boxIndex] = { ...box, isEditing: false, text: box.text };
+        updatedBoxes[boxIndex] = { ...box, commentId: newComment.id };
         setCommentBoxes(updatedBoxes);
-        // setHasComments(comments.length > 0);
       }
-    } else {
+    } else if (typeof input === "string") {
+      // Adding new comment from the popup
       const text = input;
       if (text.trim()) {
         const newComment = {
           id: uuidv4(),
           text: text,
-          parentId: null, // Top-level comment has no parent
+          parentId: null,
           childComments: [],
         };
         setComments((currentComments) => [...currentComments, newComment]);
-        // setHasComments(comments.length > 0);
 
+        // Add a corresponding new comment box
         const newCommentBox = {
-          id: uuidv4(), // Unique ID for the new comment box
-          text: commentText, // The text of the comment
-          isEditing: false, // The new box is not in edit mode by default
+          id: uuidv4(),
+          text: text,
+          isEditing: false,
+          commentId: newComment.id,
         };
-        // Update the commentBoxes state to include the new comment box
         setCommentBoxes((currentBoxes) => [...currentBoxes, newCommentBox]);
-
-        // Optionally, clear the comment input field in the modal
         setCommentText("");
       }
     }
@@ -489,8 +486,6 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
                       />
                     ))}
                 </div>
-
-                <div className="flex justify-center space-x-2 mt-2"></div>
               </div>
             )}
           </Popup>
