@@ -17,7 +17,6 @@ const cardsDatatemplates = {
         id: "task-0",
         descr: "",
         details: {},
-
         position: { x: 200, y: 0 },
       },
       {
@@ -77,42 +76,36 @@ const cardsDatatemplates = {
         id: "problemDef-0",
         descr: "",
         details: {},
-
         position: { x: 100, y: 0 },
       },
       {
         id: "data-0",
         descr: "",
         details: {},
-
         position: { x: 200, y: 0 },
       },
       {
         id: "modelDevelopment-0",
         descr: "",
         details: {},
-
         position: { x: 300, y: 0 },
       },
       {
         id: "modelEvaluation-0",
         descr: "",
         details: {},
-
         position: { x: 400, y: 0 },
       },
       {
-        id: "deployment-0",
+        id: "deploy-0",
         descr: "",
         details: {},
-
         position: { x: 500, y: 0 },
       },
       {
         id: "MLOps-0",
         descr: "",
         details: {},
-
         position: { x: 600, y: 0 },
       },
     ],
@@ -120,8 +113,8 @@ const cardsDatatemplates = {
       { start: "problemDef-0", end: "data-0" },
       { start: "data-0", end: "modelDevelopment-0" },
       { start: "modelDevelopment-0", end: "modelEvaluation-0" },
-      { start: "modelEvaluation-0", end: "deployment-0" },
-      { start: "deployment-0", end: "MLOps-0" },
+      { start: "modelEvaluation-0", end: "deploy-0" },
+      { start: "deploy-0", end: "MLOps-0" },
     ],
   },
   "3-stage": {
@@ -130,21 +123,18 @@ const cardsDatatemplates = {
         id: "design-0",
         descr: "",
         details: {},
-
         position: { x: 100, y: 0 },
       },
       {
         id: "develop-0",
         descr: "",
         details: {},
-
         position: { x: 200, y: 0 },
       },
       {
         id: "deploy-0",
         descr: "",
         details: {},
-
         position: { x: 300, y: 0 },
       },
     ],
@@ -170,32 +160,11 @@ const prompts = {
   feedback:
     "Explain how feedback is gathered from users or stakeholders to improve the AI system and highlight how it helps the iteration of AI development.",
 };
-
 const myStore = (set) => ({
   cardsData: [],
   arrows: [],
   uuid: 0,
-  // addCardData: (stage) =>
-  //   set(
-  //     produce((store) => {
-  //       store.uuid += 1;
-  //       const prompt = prompts[stage] || "No prompt available";
-  //       // Calculate new position
-  //       const newPosition = {
-  //         x: 110 + store.cardsData.length * 100, // Adjust 10 to your spacing preference
-  //         y: 0, // Adjust 5 to your vertical spacing preference
-  //       };
-  //       store.cardsData.push({
-  //         id: stage + "-" + store.uuid,
-  //         prompt: prompt,
-  //         descr: "",
-  //         details: {},
-  //         position: newPosition,
-  //       });
-  //     }),
-  //     false,
-  //     "addCardData"
-  //   ),
+
   addCardData: (stage) =>
     set(
       produce((store) => {
@@ -235,7 +204,7 @@ const myStore = (set) => ({
     set(
       produce((store) => {
         store.cardsData.map((cardData) => {
-          if (cardData.id == id) cardData.position = position;
+          if (cardData.id === id) cardData.position = position;
         });
       })
     ),
@@ -286,11 +255,6 @@ const myStore = (set) => ({
     }),
 });
 
-const useMyStore = createWithEqualityFn(
-  // persist(
-  devtools(myStore)
-  // {name: "myStore"}
-  // )
-);
+const useMyStore = createWithEqualityFn(devtools(myStore));
 
 export default useMyStore;

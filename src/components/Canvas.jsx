@@ -14,7 +14,7 @@ const Canvas = () => {
   const addTemplate = useMyStore((store) => store.addTemplate);
   const addCardData = useMyStore((store) => store.addCardData);
 
-  //   // Add a function to handle delete action
+  // Add a function to handle delete action
   const handleDelete = (cardId, boxId) => {
     // Call store action to delete the card and associated arrows
     useMyStore.getState().deleteCardAndArrows(cardId, boxId);
@@ -128,6 +128,36 @@ const Canvas = () => {
         >
           Feedback
         </button>
+        <button
+          onClick={() => addCardData("➕")}
+          className="bg-➕ rounded-lg p-0.5 my-1"
+        >
+          ➕
+        </button>
+        <button
+          onClick={() => addCardData("design")}
+          className="bg-design"
+        ></button>
+        <button
+          onClick={() => addCardData("develop")}
+          className="bg-develop"
+        ></button>{" "}
+        <button
+          onClick={() => addCardData("modelEvaluation")}
+          className="bg-modelEva"
+        ></button>
+        <button
+          onClick={() => addCardData("modelDevelopment")}
+          className="bg-modelDev"
+        ></button>
+        <button
+          onClick={() => addCardData("MLOps")}
+          className="bg-MLOps"
+        ></button>
+        <button
+          onClick={() => addCardData("problemDef")}
+          className="bg-problemDef"
+        ></button>
       </div>
     </div>
 
