@@ -62,7 +62,7 @@ const Canvas = () => {
         </button>
         <button
           onClick={() => addTemplate("8-stage")}
-          className="bg-gray rounded-lg p-0.5 my-1"
+          className="bg-cardet-gray rounded-lg p-0.5 my-1"
         >
           8 Stages
         </button>
@@ -127,12 +127,6 @@ const Canvas = () => {
           className="bg-feedback rounded-lg p-0.5 my-1"
         >
           Feedback
-        </button>
-        <button
-          onClick={() => addCardData("➕")}
-          className="bg-➕ rounded-lg p-0.5 my-1"
-        >
-          ➕
         </button>
       </div>
     </div>
