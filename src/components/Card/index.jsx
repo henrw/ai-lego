@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { FaSave } from "react-icons/fa";
 import { FaEdit } from "react-icons/fa";
 
-const ConnectPointsWrapper = ({ boxId, handler, dragRef, boxRef }) => {
+const ConnectPointsWrapper = ({ cardId, handler, dragRef, cardRef }) => {
   const ref1 = useRef();
 
   const [position, setPosition] = useState({});
@@ -26,10 +26,10 @@ const ConnectPointsWrapper = ({ boxId, handler, dragRef, boxRef }) => {
         onMouseDown={(e) => e.stopPropagation()}
         onDragStart={(e) => {
           setBeingDragged(true);
-          e.dataTransfer.setData("arrow", boxId);
+          e.dataTransfer.setData("arrow", cardId);
         }}
         onDrag={(e) => {
-          const { offsetTop, offsetLeft } = boxRef.current;
+          const { offsetTop, offsetLeft } = cardRef.current;
           const { x, y } = dragRef.current.state;
           setPosition({
             position: "fixed",
@@ -48,7 +48,7 @@ const ConnectPointsWrapper = ({ boxId, handler, dragRef, boxRef }) => {
       {beingDragged ? (
         <Xarrow
           path="straight"
-          start={boxId}
+          start={cardId}
           startAnchor={"right"}
           end={ref1}
           color="black"
@@ -75,19 +75,16 @@ const colorClasses = {
   "➕": "➕",
 };
 
-const getBorderColorClassFromId = (id) => {
-  const stageName = id.split("-")[0];
-  return `border-${colorClasses[stageName]}`; // This will return something like "border-red-500"
+const getBorderColorClassFromId = (stage) => {
+  return `border-${colorClasses[stage]}`; // This will return something like "border-red-500"
 };
 
 // const getBgColorClassFromId = (id) => {
 //   const stageName = id.split("-")[0];
 //   return `bg-${colorClasses[stageName]}`;
 // };
-const getBgColorClassFromId = (id) => {
-  const stageName = id.split("-")[0];
-  const bgColorClass = `bg-${colorClasses[stageName]}`;
-  console.log(`Stage: ${stageName}, Class: ${bgColorClass}`);
+const getBgColorClassFromId = (stage) => {
+  const bgColorClass = `bg-${colorClasses[stage]}`;
   return bgColorClass;
 };
 
@@ -150,11 +147,11 @@ const CommentComponent = ({
     </div>
   );
 };
-export default function Card({ id, handleDelete, text, handler, boxId }) {
+export default function Card({ id, stage, handleDelete, text, handler, cardId }) {
   const borderColorClass = getBorderColorClassFromId(id);
-  const bgColorClass = getBgColorClassFromId(id);
+  const bgColorClass = getBgColorClassFromId(stage);
   const cardData = useMyStore(
-    (store) => store.cardsData.filter((cardData) => cardData.id === id)[0],
+    (store) => store.cards.filter((cardData) => cardData.uid === id)[0],
     shallow
   );
   // Extract the stage description from cardData
@@ -162,7 +159,7 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
   const prompt = cardData ? cardData.prompt : "No prompt available";
   const setCardPosition = useMyStore((store) => store.setCardPosition);
   const dragRef = useRef();
-  const boxRef = useRef();
+  const cardRef = useRef();
 
   const renderStageNameTrigger = () => (
     <div className={`${bgColorClass} p-1 py-0 rounded text-center text-sm`}>
@@ -176,15 +173,15 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
     });
   };
 
-  const addArrow = useMyStore((store) => store.addArrow);
+  const addLink = useMyStore((store) => store.addLink);
   const stageName =
-    id.split("-")[0].charAt(0).toUpperCase() + id.split("-")[0].slice(1);
+    stage.charAt(0).toUpperCase() + stage.slice(1);
 
-  const refreshArrows = useMyStore((store) => store.refreshArrows); // Add this function inside the Card component before the return statement
+  const refreshLinks = useMyStore((store) => store.refreshLinks); // Add this function inside the Card component before the return statement
 
   const handleTextChange = (newText, cardId) => {
     // Call a store action to update the text for this specific card
-    useMyStore.getState().updateCardText(cardId, newText);
+    useMyStore.getState().setCardDescription(cardId, newText);
   };
 
   const handleReplyToComment = (parentId, replyText) => {
@@ -302,8 +299,8 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
   };
 
   // This function toggles edit mode for a comment box
-  const toggleEdit = (boxId, commentId = null) => {
-    const boxIndex = commentBoxes.findIndex((box) => box.id === boxId);
+  const toggleEdit = (cardId, commentId = null) => {
+    const boxIndex = commentBoxes.findIndex((box) => box.id === cardId);
     if (boxIndex === -1) return;
 
     const updatedBoxes = [...commentBoxes];
@@ -324,27 +321,26 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
       onStop={handleStop}
       position={cardData.position}
       onDrag={(e) => {
-        refreshArrows();
+        refreshLinks();
       }}
     >
       <div
         className={`absolute bg-gray-200 rounded shadow p-2 ${
           showComments ? "" : "min-h-[100px]"
         } `} // w-96 for fixed width
-        id={boxId}
-        ref={boxRef}
+        id={id}
+        ref={cardRef}
         style={{ paddingBottom: "0" }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
-          console.log(e.dataTransfer.getData("arrow"));
-          if (e.dataTransfer.getData("arrow") != boxId) {
-            const refs = { start: e.dataTransfer.getData("arrow"), end: boxId };
-            addArrow(refs);
+          if (e.dataTransfer.getData("arrow") != cardId) {
+            const refs = {start: e.dataTransfer.getData("arrow"), end: id};
+            addLink(refs);
           }
         }}
       >
         <button
-          onClick={() => handleDelete(id, boxId)}
+          onClick={() => handleDelete(id, cardId)}
           className="absolute top-0 right-0 text p-1"
         >
           ❌
@@ -387,7 +383,7 @@ export default function Card({ id, handleDelete, text, handler, boxId }) {
           </Popup>
         </div>
 
-        <ConnectPointsWrapper {...{ boxId, handler, dragRef, boxRef }} />
+        <ConnectPointsWrapper cardId={id} {...{handler, dragRef, cardRef }} />
 
         <div className="mt-4">
           <textarea

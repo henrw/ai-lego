@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { useUserAuth } from "../authentication/UserAuthContext";
 import { useLocation } from "react-router-dom";
 import { db } from "../firebase"; // Ensure you have this import
-import { doc, getDoc, updateDoc } from "firebase/firestore"; // Import Firestore document update functions
+import { doc, getDoc, updateDoc, addDoc, collection, arrayUnion, query, where, getDocs, serverTimestamp } from "firebase/firestore"; // Import Firestore document update functions
 import {
   ref,
   uploadBytes,
@@ -21,6 +21,7 @@ const Home = () => {
   const location = useLocation(); // Get location to access state
   const [showModal, setShowModal] = useState(false); // Default to false
   const [userProfile, setUserProfile] = useState({});
+  const [projectsInfo, setProjectsInfo] = useState([]);
   // Combined state object for all fields
   const [fields, setFields] = useState({
     occupation: "",
@@ -64,7 +65,28 @@ const Home = () => {
       }
     };
 
+    const fetchProjectData = async () => {
+      if (user?.uid) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        const projectIds = userDocSnap.data().projectIds;
+        if (projectIds && projectIds.length) {
+          const projects = [];
+          const q = query(collection(db, "projects"), where("uid", "in", projectIds));
+          const projectDocSnap = await getDocs(q);
+          projectDocSnap.forEach(doc => {
+            const name = doc.data().name;
+            const lastUpdatedTime = doc.data().lastUpdatedTime.toDate().toLocaleDateString('en-US');
+            const lastUpdatedBy = doc.data().lastUpdatedBy;
+            projects.push({ uid: doc.data().uid, name: name, lastUpdatedTime: lastUpdatedTime, lastUpdatedBy: lastUpdatedBy });
+          });
+          setProjectsInfo(projects);
+        }
+      }
+    };
+
     fetchUserProfile();
+    fetchProjectData();
   }, [user]);
 
   useEffect(() => {
@@ -163,7 +185,7 @@ const Home = () => {
       ) {
         finalData[field] =
           customInputs[
-            `custom${field.charAt(0).toUpperCase() + field.slice(1)}`
+          `custom${field.charAt(0).toUpperCase() + field.slice(1)}`
           ];
       }
     });
@@ -181,6 +203,28 @@ const Home = () => {
     }
   };
 
+  const createProject = async () => {
+    const docRef = await addDoc(collection(db, "projects"), {
+      name: "untitled",
+      cards: [],
+      links: [],
+      userIds: [user.uid],
+      lastUpdatedTime: serverTimestamp(),
+      lastUpdatedBy: user.uid,
+    });
+
+    // For quick filtering
+    updateDoc(docRef, {
+      uid: docRef.id
+    });
+
+    updateDoc(doc(db, "users", user.uid), {
+      projectIds: arrayUnion(docRef.id)
+    });
+
+    navigate(`/project/${docRef.id}`);
+  };
+
   const handleLoginRedirect = () => {
     navigate("/");
   };
@@ -191,13 +235,6 @@ const Home = () => {
     borderRadius: "5px",
     backgroundColor: "#f9f9f9", // Lighter background color
     padding: "16px",
-  };
-
-  const cardTextStyle = {
-    color: "#007bff", // Example text color
-    textAlign: "center",
-    fontWeight: "bold",
-    // Define more styles as needed
   };
 
   return (
@@ -221,53 +258,32 @@ const Home = () => {
 
       {user && (
         <Container>
-          <h2 style={{ paddingTop: "100px", paddingBottom: "15px" }}>
-            Project Management
-          </h2>
+          <div className="flex flex-row items-center" style={{ paddingTop: "100px", paddingBottom: "15px" }}>
+            <div className="font-bold text-2xl">
+              Projects
+            </div>
+            <button className="ml-auto rounded p-2 text-white" style={{ backgroundColor: "#b063c5" }}
+              onClick={createProject}>
+              + New Project
+            </button>
+          </div>
 
-          <Row className="mb-20">
-            <Col md={4}>
-              <Card
-                onClick={() => navigate("/canvas")}
-                style={{ cursor: "pointer" }}
-              >
-                <Card.Body style={cardStyle}>
-                  <Card.Title style={cardTextStyle}>
-                    Create New Project
-                  </Card.Title>
-                  {/* Icon for blank project */}
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={4}>
-              <Card>
-                <Card.Body style={cardStyle}>
-                  <Card.Title style={cardTextStyle}>
-                    Open Existing Project
-                  </Card.Title>
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-          <h2 style={{ paddingBottom: "15px" }}>My Projects</h2>
           <Row className="mb-4">
             {/* Map through projects and create a card for each */}
-            <Col md={4}>
-              <Card>
-                <Card.Body
-                  style={{
-                    ...cardStyle, // Spread the default card styles
-                    backgroundColor: "#b063c5", // Purple background for this specific card
-                    // White text for this specific card
-                  }}
-                >
-                  <Card.Title style={{ ...cardTextStyle, color: "white" }}>
-                    My New Design System
-                  </Card.Title>
-                  {/* Other project details */}
-                </Card.Body>
-              </Card>
-            </Col>
+            {projectsInfo.map((item, index) => (
+              // Place the Col component inside the map to ensure each card gets its own column
+              <Col md={3} key={index} className="mb-4" onClick={() => { navigate(`/project/${item.uid}`) }} style={{ cursor: 'pointer' }}>
+                <Card>
+                  <Card.Body style={{ ...cardStyle }}>
+                    <Card.Img variant="top" src="/project-thumbnail-example.png" />
+                    <Card.Title>{item.name}</Card.Title>
+                    <div>Last Updated: {item.lastUpdatedTime}</div>
+                    {/* <div>Last Updated By: {item.lastUpdatedBy}</div> */}
+                    {/* Other project details */}
+                  </Card.Body>
+                </Card>
+              </Col>
+            ))}
             {/* Add more project cards as needed */}
           </Row>
         </Container>

@@ -38,7 +38,7 @@ root.render(
         />
 
         {/* Other routes */}
-        <Route path="/canvas" element={<Canvas />} />
+        <Route path="project/:projectId" element={<Canvas />} />
         <Route path="/home" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/knowledge" element={<Knowledge />} />

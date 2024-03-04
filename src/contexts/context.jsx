@@ -2,6 +2,8 @@ import { produce } from "immer";
 // Import the suggested function from Zustand
 import { createWithEqualityFn } from "zustand/traditional";
 import { devtools, persist, createJSONStorage } from "zustand/middleware";
+import { db } from "../firebase"; // Ensure you have this import
+import { doc, getDoc, updateDoc, addDoc, collection, arrayUnion, query, where, getDocs, serverTimestamp, deleteDoc } from "firebase/firestore"; // Import Firestore document update functions
 
 const cardsDatatemplates = {
   "8-stage": {
@@ -160,99 +162,215 @@ const prompts = {
   feedback:
     "Explain how feedback is gathered from users or stakeholders to improve the AI system and highlight how it helps the iteration of AI development.",
 };
+
 const myStore = (set) => ({
-  cardsData: [],
-  arrows: [],
-  uuid: 0,
+  projectId: null,
+  cards: [],
+  links: [],
 
-  addCardData: (stage) =>
+  pullProject: async (projectId) => {
+    const projectDocSnap = await getDoc(doc(db, "projects", projectId));
+    if (!projectDocSnap.exists()) {
+      // Creat new project
+      console.error("Should never be called [Project not found");
+      return;
+    }
+    const projectData = projectDocSnap.data();
+
+    const cardFetchPromises = projectData.cards.map(cardId =>
+      getDoc(doc(db, "cards", cardId)).then(cardDocSnap => cardDocSnap.data())
+    );
+    const cards = await Promise.all(cardFetchPromises);
+
+    set(state => ({
+      ...state,
+      projectId: projectId,
+      links: projectData.links,
+      cards: cards,
+    }));
+  },
+
+  addCardData: async (stage) => {
+    const { projectId, cards } = useMyStore.getState();
+    if (projectId == null) {
+      throw new Error("null projectId");
+    }
+
+    const rightmostX = cards.reduce((max, card) => Math.max(card.position.x, max), 0);
+    const newPosition = { x: rightmostX + 170, y: 0 };
+
+    const newCard = {
+      projectId: projectId,
+      uid: "", // Temporarily empty, will be filled with doc ID
+      stage: stage,
+      prompt: prompts[stage] || "No prompt available",
+      description: "",
+      comments: [],
+      position: newPosition,
+    };
+
+    try {
+      const cardDocRef = await addDoc(collection(db, "cards"), newCard);
+
+      set(produce((store) => {
+        newCard.uid = cardDocRef.id;
+        store.cards.push(newCard);
+      }));
+
+      await updateDoc(cardDocRef, { uid: cardDocRef.id }); // Update the card with its UID
+
+      await updateDoc(doc(db, "projects", projectId), {
+        cards: arrayUnion(cardDocRef.id),
+        lastUpdatedTime: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error adding/updating card:", error);
+    }
+  },
+
+  setCardDescription: async (id, newDescription) => {
+    set((state) => ({
+      ...state,
+      cards: state.cards.map((card) =>
+        card.uid === id ? { ...card, description: newDescription } : card
+      ),
+    }));
+    const cardDocRef = doc(db, "cards", id);
+    try {
+      await updateDoc(cardDocRef, { description: newDescription });
+    } catch (error) {
+      console.error("Error updating card description: ", error);
+    }
+  },
+  setCardPosition: async (id, position) => {
+    set((state) => ({
+      ...state,
+      cards: state.cards.map((card) =>
+        card.uid === id ? { ...card, position: position } : card
+      ),
+    }));
+    const cardDocRef = doc(db, "cards", id);
+    try {
+      await updateDoc(cardDocRef, { position: position });
+    } catch (error) {
+      console.error("Error updating card description: ", error);
+    }
+  },
+
+  // Refs is {start: cardId, end: cardId} (must be dict)
+  addLink: async (refs) => {
+    if (refs.start === refs.end)
+      return;
     set(
       produce((store) => {
-        // Increment the UUID for the new card
-        store.uuid += 1;
-        // Find the rightmost card's x position
-        const rightmostX = store.cardsData.reduce(
-          (max, card) => Math.max(card.position.x, max),
-          0
-        );
-        // Calculate the new card's position, 150 units to the right of the rightmost card
-        const newPosition = { x: 0 + rightmostX + 170, y: 0 };
-        // Add the new card to the cardsData array
-        store.cardsData.push({
-          id: `${stage}-${store.uuid}`,
-          descr: "",
-          details: {},
-          prompt: prompts[stage] || "No prompt available",
-          position: newPosition,
-        });
-      }),
-      false,
-      "addCardData"
-    ),
-
-  // Add this action to your store
-  updateCardText: (id, newText) =>
-    set(
-      produce((store) => {
-        const cardToUpdate = store.cardsData.find((card) => card.id === id);
-        if (cardToUpdate) {
-          cardToUpdate.descr = newText;
+        if (!store.links.includes(refs)) {
+          store.links.push(refs);
         }
       })
-    ),
-  setCardPosition: (id, position) =>
+    );
+
+    const { projectId } = useMyStore.getState();
+
+    if (projectId) {
+      try {
+        const projectDocRef = doc(db, "projects", projectId);
+        const projectDocSnap = await getDoc(projectDocRef);
+        const currentLinks = projectDocSnap.data().links || [];
+        const updatedLinks = [...currentLinks, refs];
+        await updateDoc(projectDocRef, { links: updatedLinks });
+      } catch (error) {
+        console.error("Error updating arrows in Firestore:", error);
+      }
+    } else {
+      console.error("projectId is not set, unable to update arrows in Firestore");
+    }
+  },
+
+  refreshLinks: () =>
     set(
       produce((store) => {
-        store.cardsData.map((cardData) => {
-          if (cardData.id === id) cardData.position = position;
+        store.links = [...store.links];
+      })
+    ),
+  // TODO connect to firebase
+  // addTemplate: (type) =>
+  //   set(
+  //     produce((store) => {
+  //       if (cardsDatatemplates[type]) {
+  //         const updatedCardsData = cardsDatatemplates[type].cardsData.map(
+  //           (card) => {
+  //             const stageName = card.id.split("-")[0]; // Extract stage name from the id
+  //             return {
+  //               ...card,
+  //               prompt: prompts[stageName] || "No prompt available", // Assign the corresponding prompt
+  //             };
+  //           }
+  //         );
+
+  //         store.cardsData = updatedCardsData;
+  //         store.arrows = cardsDatatemplates[type].arrows;
+  //       } else {
+  //         store.cardsData = [];
+  //         store.arrows = [];
+  //       }
+  //     })
+  //   ),
+
+  resetStore: async () => {
+    // Delete corresponding firestore data
+    const { projectId, cards } = useMyStore.getState();
+    if (projectId) {
+      try {
+        const projectDocRef = await getDoc(doc(db, "projects", projectId));
+        await updateDoc(projectDocRef, { links: [], cards: [] });
+      } catch (error) {
+        console.error("Error updating arrows in Firestore:", error);
+      }
+
+      const cardFetchPromises = cards.forEach(cardId => {
+        deleteDoc(doc(db, "cards", cardId));
+      });
+      await Promise.all(cardFetchPromises);
+
+      set({
+        cards: [],
+        links: [],
+        projectId: null,
+      });
+    }
+  },
+
+  cleanStore: async (newProjectId) => {
+    // Delete corresponding firestore data
+    const { projectId } = useMyStore.getState();
+    if (!projectId || projectId === newProjectId)
+      return;
+    set({
+      cards: [],
+      links: [],
+      projectId: null,
+    });
+  },
+
+  deleteCardAndLinks: async (cardId) => {
+    const { projectId, cards, links } = useMyStore.getState();
+    const cardToDelete = cards.find((card) => card.uid === cardId);
+    if (cardToDelete && cardToDelete.uid) {
+      const cardToDeleteId = cardToDelete.uid;
+      const newCardsData = cards.filter((card) => card.uid !== cardId);
+      const newLinks = links.filter((link) => link.start !== cardId && link.end !== cardId);
+      try {
+        useMyStore.setState({ projectId: projectId, cards: newCardsData, links: newLinks });
+        await deleteDoc(doc(db, "cards", cardToDeleteId));
+        await updateDoc(doc(db, "projects", projectId), {
+          cards: newCardsData.map((card) => card.uid),
+          links: newLinks
         });
-      })
-    ),
-  addArrow: (refs) =>
-    set(
-      produce((store) => {
-        store.arrows.push(refs);
-      })
-    ),
-  refreshArrows: () =>
-    set(
-      produce((store) => {
-        store.arrows = [...store.arrows];
-      })
-    ),
-  addTemplate: (type) =>
-    set(
-      produce((store) => {
-        if (cardsDatatemplates[type]) {
-          const updatedCardsData = cardsDatatemplates[type].cardsData.map(
-            (card) => {
-              const stageName = card.id.split("-")[0]; // Extract stage name from the id
-              return {
-                ...card,
-                prompt: prompts[stageName] || "No prompt available", // Assign the corresponding prompt
-              };
-            }
-          );
-
-          store.cardsData = updatedCardsData;
-          store.arrows = cardsDatatemplates[type].arrows;
-        } else {
-          store.cardsData = [];
-          store.arrows = [];
-        }
-      })
-    ),
-
-  deleteCardAndArrows: (cardId, boxId) =>
-    set((state) => {
-      // Filter out the card from cardsData
-      const newCardsData = state.cardsData.filter((card) => card.id !== cardId);
-      // Filter out the arrows associated with the card
-      const newArrows = state.arrows.filter(
-        (arrow) => arrow.start !== boxId && arrow.end !== boxId
-      );
-      return { ...state, cardsData: newCardsData, arrows: newArrows };
-    }),
+      } catch (error) {
+        console.error("Error deleting card and links: ", error);
+      }
+    }
+  }
 });
 
 const useMyStore = createWithEqualityFn(devtools(myStore));
