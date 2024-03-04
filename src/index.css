@@ -27,3 +27,13 @@ code {
 
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  .sketchbook-background {
+    @apply w-screen h-screen;
+    background-size: 20px 20px;
+    background-image: 
+      linear-gradient(to right, lightgray 1px, transparent 1px),
+      linear-gradient(to bottom, lightgray 1px, transparent 1px);
+  }
+}

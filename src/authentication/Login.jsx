@@ -63,7 +63,7 @@ const Login = () => {
           <div className="d-grid gap-2 mt-3">
             <button
               type="submit"
-              class="border border-blue-500 hover:bg-blue-500 text-blue-500 font-semibold hover:text-white py-1 px-2 hover:border-transparent rounded"
+              className="border border-blue-500 hover:bg-blue-500 text-blue-500 font-semibold hover:text-white py-1 px-2 hover:border-transparent rounded"
             >
               Log In
             </button>

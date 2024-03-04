@@ -1,47 +1,56 @@
-import React from "react";
+import React, { useEffect } from "react";
 import Card from "./Card";
 import Column from "./Column";
 import { useState } from "react";
 import useMyStore from "../contexts/context";
 import Xarrow from "react-xarrows";
+import { useParams } from 'react-router-dom';
 
 const Canvas = () => {
-  const arrowsPath = "smooth";
+  const { projectId } = useParams();
+  const linksPath = "smooth";
 
-  const cardsData = useMyStore((store) => store.cardsData);
-  const arrows = useMyStore((store) => store.arrows);
+  const cardsData = useMyStore((store) => store.cards);
+  const links = useMyStore((store) => store.links);
 
   const addTemplate = useMyStore((store) => store.addTemplate);
   const addCardData = useMyStore((store) => store.addCardData);
+  const pullProject = useMyStore((store) => store.pullProject);
+  const cleanStore = useMyStore((store) => store.cleanStore);
 
   // Add a function to handle delete action
-  const handleDelete = (cardId, boxId) => {
-    // Call store action to delete the card and associated arrows
-    useMyStore.getState().deleteCardAndArrows(cardId, boxId);
+  const handleDelete = (cardId) => {
+    // Call store action to delete the card and associated links
+    useMyStore.getState().deleteCardAndLinks(cardId);
   };
+
+  useEffect(() => {
+    cleanStore(projectId);
+    pullProject(projectId);
+  }, [pullProject, projectId]);
 
   console.log("Canvas rendering");
 
   return (
     // <div className="flex flex-row ">
-    <div className="pt-16 relative">
+    <div className="relative pt-16 sketchbook-background">
       {cardsData.map((card) => (
         <Card
-          id={card.id}
+          id={card.uid}
+          stage={card.stage}
           //   handleDelete={() => {}}
           handleDelete={handleDelete}
-          key={card.id}
-          text={card.descr}
-          position={card.canvasData}
+          key={card.uid}
+          text={card.description}
           {...{ handler: "right" }}
-          boxId={"" + card.id}
+          cardId={"" + card.id}
         />
       ))}
 
-      {arrows.map((ar, idx) => (
+      {links.map((ar, idx) => (
         <Xarrow
           className="arrow"
-          path={arrowsPath}
+          path={linksPath}
           start={ar.start}
           end={ar.end}
           startAnchor={"right"}
@@ -52,8 +61,8 @@ const Canvas = () => {
         />
       ))}
 
-      <div className="flex flex-col left-[1%] absolute">
-        <p className="font-bold text-lg">Templates:</p>
+      <div className="fixed bottom-0 left-0 mb-4 ml-4 flex flex-col">
+        {/* <p className="font-bold text-lg">Templates:</p>
         <button
           onClick={() => addTemplate("empty")}
           className="bg-red-400 rounded-lg p-0.5 my-1"
@@ -78,63 +87,30 @@ const Canvas = () => {
         >
           3 Stages
         </button>
-        <br></br>
+        <br></br> */}
+
         <p className="font-bold text-lg">Stages:</p>
-        <button
-          onClick={() => addCardData("problem")}
-          className="bg-problem rounded-lg p-0.5 my-1"
-        >
-          Problem
-        </button>
-        <button
-          onClick={() => addCardData("task")}
-          className="bg-task rounded-lg p-0.5 my-1"
-        >
-          Task
-        </button>
-        <button
-          onClick={() => addCardData("data")}
-          className="bg-data rounded-lg p-0.5 my-1"
-        >
-          Data
-        </button>
-        <button
-          onClick={() => addCardData("model")}
-          className="bg-model rounded-lg p-0.5 my-1"
-        >
-          Model
-        </button>
-        <button
-          onClick={() => addCardData("train")}
-          className="bg-train rounded-lg p-0.5 my-1"
-        >
-          Train
-        </button>
-        <button
-          onClick={() => addCardData("test")}
-          className="bg-test rounded-lg p-0.5 my-1"
-        >
-          Test
-        </button>
-        <button
-          onClick={() => addCardData("deploy")}
-          className="bg-deploy rounded-lg p-0.5 my-1"
-        >
-          Deploy
-        </button>
-        <button
-          onClick={() => addCardData("feedback")}
-          className="bg-feedback rounded-lg p-0.5 my-1"
-        >
-          Feedback
-        </button>
-        <button
-          onClick={() => addCardData("➕")}
-          className="bg-➕ rounded-lg p-0.5 my-1"
-        >
-          ➕
-        </button>
-        <button
+        {
+          ["problem", "task", "data", "model", "train", "test", "deploy", "➕"].map((stage, index) => (
+            <button
+              key={index}
+              onClick={() => addCardData(stage)}
+              className={`rounded-lg p-1 my-1 ${
+                stage === 'problem' ? 'bg-problem' :
+                stage === 'task' ? 'bg-task' :
+                stage === 'data' ? 'bg-data' :
+                stage === 'model' ? 'bg-model' :
+                stage === 'train' ? 'bg-train' :
+                stage === 'test' ? 'bg-test' :
+                stage === 'deploy' ? 'bg-deploy' :
+                'bg-default'
+              }`}
+            >
+              {stage.charAt(0).toUpperCase() + stage.slice(1)}
+            </button>
+          ))
+        }
+        {/* <button
           onClick={() => addCardData("design")}
           className="bg-design"
         ></button>
@@ -157,7 +133,7 @@ const Canvas = () => {
         <button
           onClick={() => addCardData("problemDef")}
           className="bg-problemDef"
-        ></button>
+        ></button> */}
       </div>
     </div>
 

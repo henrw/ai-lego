@@ -13,7 +13,7 @@ const Navbar = () => {
 
   // Fetch user details from Firestore
   useEffect(() => {
-    if (user) {
+    if (user && Object.keys(user).length !== 0) {
       const fetchUserDetails = async () => {
         const userDocRef = doc(db, "users", user.uid);
         const docSnap = await getDoc(userDocRef);
@@ -47,7 +47,7 @@ const Navbar = () => {
           <img src="/logo.svg" alt="logo" width="150" className="mr-10" />
         </Link>
       </div>
-      <div className="links flex gap-8">
+      <div className="links flex flex-row items-center gap-8">
         {user ? (
           <>
             <Link
