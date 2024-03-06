@@ -208,6 +208,7 @@ const Home = () => {
       name: "untitled",
       cards: [],
       links: [],
+      evaluations: [],
       userIds: [user.uid],
       lastUpdatedTime: serverTimestamp(),
       lastUpdatedBy: user.uid,

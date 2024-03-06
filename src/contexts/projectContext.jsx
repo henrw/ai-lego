@@ -164,9 +164,11 @@ const prompts = {
 };
 
 const myStore = (set) => ({
-  projectId: null,
+  projectName: "",
+  projectId: "",
   cards: [],
   links: [],
+  evaluations: [],
 
   pullProject: async (projectId) => {
     const projectDocSnap = await getDoc(doc(db, "projects", projectId));
@@ -175,19 +177,112 @@ const myStore = (set) => ({
       console.error("Should never be called [Project not found");
       return;
     }
-    const projectData = projectDocSnap.data();
 
-    const cardFetchPromises = projectData.cards.map(cardId =>
-      getDoc(doc(db, "cards", cardId)).then(cardDocSnap => cardDocSnap.data())
-    );
-    const cards = await Promise.all(cardFetchPromises);
+    const projectData = projectDocSnap.data();
+    let cards = [];
+    if (projectData.cards !== undefined) {
+      const cardFetchPromises = projectData.cards.map(cardId =>
+        getDoc(doc(db, "cards", cardId)).then(cardDocSnap => cardDocSnap.data())
+      );
+      cards = await Promise.all(cardFetchPromises);
+
+      for (const card of cards) {
+        let comments = [];
+        if (card.comments !== undefined) {
+          const commentsFetchPromises = card.comments.map(commentId =>
+            getDoc(doc(db, "comments", commentId)).then(commentDocSnap => commentDocSnap.data())
+          );
+          comments = await Promise.all(commentsFetchPromises);
+        }
+        card.comments = comments;
+      };
+    }
+    let evaluations = [];
+    if (projectData.evaluations !== undefined) {
+      const evaluationFetchPromises = projectData.evaluations.map(evaluationId =>
+        getDoc(doc(db, "evaluations", evaluationId)).then(evaluationDocSnap => evaluationDocSnap.data())
+      );
+      evaluations = await Promise.all(evaluationFetchPromises);
+    }
 
     set(state => ({
       ...state,
+      projectName: projectData.name,
       projectId: projectId,
       links: projectData.links,
       cards: cards,
+      evaluations: evaluations,
     }));
+  },
+
+  addComment: async (username, cardId, text) => {
+    const { projectId, cards } = useMyStore.getState();
+    if (projectId == null) {
+      throw new Error("null projectId");
+    }
+
+    const newComment = {
+      projectId: projectId,
+      cardId: cardId,
+      by: username,
+      uid: "", // Temporarily empty, will be filled with doc I
+      text: text,
+      lastUpdatedTime: "Now"
+    };
+
+    try {
+      const commentDocRef = await addDoc(collection(db, "comments"), newComment);
+
+      useMyStore.setState(produce((store) => {
+        const cardToUpdate = store.cards.find((card) => card.uid === cardId);
+        if (cardToUpdate) {
+          newComment.uid = commentDocRef.id;
+          cardToUpdate.comments.push(newComment);
+        }
+      }));
+
+      await updateDoc(commentDocRef, { uid: commentDocRef.id, lastUpdatedTime: serverTimestamp() }); // Update the card with its UID
+
+      await updateDoc(doc(db, "cards", cardId), {
+        comments: arrayUnion(commentDocRef.id),
+      });
+    } catch (error) {
+      console.error("Error adding/updating card:", error);
+    }
+  },
+
+  addEvaluation: async (username, report) => {
+    const { projectId } = useMyStore.getState();
+    if (projectId == null) {
+      throw new Error("null projectId");
+    }
+
+    const newEvaluation = {
+      ...report,
+      projectId: projectId,
+      cardIds: [],
+      by: username,
+      uid: "", // Temporarily empty, will be filled with doc I
+      lastUpdatedTime: "Now"
+    };
+
+    try {
+      const evaluationDocRef = await addDoc(collection(db, "evaluations"), newEvaluation);
+
+      useMyStore.setState(produce((store) => {
+        const newEvaluations = store.evaluations;
+        newEvaluations.push({ ...newEvaluation, uid: evaluationDocRef.id });
+        store.evaluations = newEvaluations;
+      }));
+
+      await updateDoc(evaluationDocRef, { uid: evaluationDocRef.id, lastUpdatedTime: serverTimestamp() }); // Update the card with its UID
+
+      await updateDoc(doc(db, "projects", projectId), {
+        evaluations: arrayUnion(evaluationDocRef.id),
+      });
+    } catch (error) {
+      console.error("Error adding/updating card:", error);
+    }
   },
 
   addCardData: async (stage) => {
@@ -257,6 +352,25 @@ const myStore = (set) => ({
     }
   },
 
+  setProjectName: async (projectName) => {
+    const { projectId } = useMyStore.getState();
+
+    if (projectId) {
+      try {
+        set((state) => ({
+          ...state,
+          projectName: projectName
+        }));
+        const projectDocRef = doc(db, "projects", projectId);
+        await updateDoc(projectDocRef, { name: projectName });
+      } catch (error) {
+        console.error("Error updating name in Firestore:", error);
+      }
+    } else {
+      console.error("projectId is not set");
+    }
+  },
+
   // Refs is {start: cardId, end: cardId} (must be dict)
   addLink: async (refs) => {
     if (refs.start === refs.end)
@@ -285,6 +399,7 @@ const myStore = (set) => ({
       console.error("projectId is not set, unable to update arrows in Firestore");
     }
   },
+
 
   refreshLinks: () =>
     set(
@@ -335,7 +450,9 @@ const myStore = (set) => ({
       set({
         cards: [],
         links: [],
-        projectId: null,
+        evaluations: [],
+        projectName: "",
+        projectId: "",
       });
     }
   },
@@ -348,7 +465,9 @@ const myStore = (set) => ({
     set({
       cards: [],
       links: [],
-      projectId: null,
+      evaluations: [],
+      projectName: "",
+      projectId: "",
     });
   },
 
@@ -369,6 +488,34 @@ const myStore = (set) => ({
       } catch (error) {
         console.error("Error deleting card and links: ", error);
       }
+    }
+  },
+
+  deleteComment: async (commentId) => {
+    const { cards } = useMyStore.getState();
+
+    useMyStore.setState((state) => {
+      const newCards = state.cards.map((card) => {
+        if (card.comments.some((comment) => comment.uid === commentId)) {
+          const updatedComments = card.comments.filter((comment) => comment.uid !== commentId);
+          return { ...card, comments: updatedComments };
+        }
+        return card;
+      });
+
+      return { ...state, cards: newCards };
+    });
+
+    try {
+      const cardToUpdate = cards.find((card) => card.comments.some((comment) => comment.uid === commentId));
+      if (cardToUpdate) {
+        await updateDoc(doc(db, "cards", cardToUpdate.uid), {
+          comments: cardToUpdate.comments.map((comment) => (comment.uid)).filter((uid) => uid !== commentId)
+        });
+        await deleteDoc(doc(db, "comments", commentId));
+      }
+    } catch (error) {
+      console.error("Error deleting comment:", error);
     }
   }
 });
