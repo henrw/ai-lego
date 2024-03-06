@@ -4,7 +4,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 import App from "./App";
-import Knowledge from "./routes/Knowledge";
 import Home from "./components/Home";
 import Navbar from "./components/Navbar";
 import Login from "./authentication/Login";
@@ -41,7 +40,6 @@ root.render(
         <Route path="project/:projectId" element={<Canvas />} />
         <Route path="/home" element={<Home />} />
         <Route path="/signup" element={<SignUp />} />
-        <Route path="/knowledge" element={<Knowledge />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
       </Routes>

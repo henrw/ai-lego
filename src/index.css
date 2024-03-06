@@ -11,6 +11,7 @@ h2 {
 h3 {
   @apply text-lg;
 }
+
 /* body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
@@ -32,8 +33,89 @@ code {
   .sketchbook-background {
     @apply w-screen h-screen;
     background-size: 20px 20px;
-    background-image: 
+    background-image:
       linear-gradient(to right, lightgray 1px, transparent 1px),
       linear-gradient(to bottom, lightgray 1px, transparent 1px);
+  }
+
+  .btn-close-red {
+    filter: invert(20%) sepia(94%) saturate(7486%) hue-rotate(356deg) brightness(99%) contrast(119%);
+  }
+
+  .vertical-line-container {
+    position: relative;
+    /* This is necessary for absolute positioning of the pseudo-element */
+  }
+
+  .vertical-line-container::after {
+    content: '';
+    position: absolute;
+    left: 100%;
+    /* Position the line to the right of the container */
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 1.5px;
+    /* Adjust the width of the line as needed */
+    background: white;
+  }
+
+  .expandable-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 250px;
+    height: 0;
+    background-color: #f1f1f1;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    transition: height 0.3s ease-in-out, opacity 0.3s ease, width 0.3s ease-in-out;
+    overflow: hidden;
+    opacity: 0;
+    /* Hide content initially */
+    display: flex;
+    flex-direction: column;
+    align-items: left;
+    padding: 10px;
+    justify-content: top;
+  }
+
+  .expandable-panel.expanded {
+    height: 100%;
+    /* Adjust height as needed */
+    bottom: 0;
+    right: 0;
+    /* Align to bottom */
+    opacity: 1;
+    /* Show content */
+    padding-top: 80px;
+  }
+
+  .expandable-panel.collapsed {
+    border-radius: 10px;
+    /* Make it round */
+    width: 100px;
+    /* Adjust size for collapsed state */
+    height: 50px;
+    /* Same as width to make it round */
+    right: 20px;
+    /* Position at the bottom right corner */
+    bottom: 20px;
+    opacity: 1;
+  }
+
+  .round-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 100px;
+    height: 50px;
+    border-radius: 10px;
+    background-color: rgb(154, 72, 255);
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }

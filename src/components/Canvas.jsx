@@ -2,21 +2,25 @@ import React, { useEffect } from "react";
 import Card from "./Card";
 import Column from "./Column";
 import { useState } from "react";
-import useMyStore from "../contexts/context";
+import useMyStore from "../contexts/projectContext";
 import Xarrow from "react-xarrows";
 import { useParams } from 'react-router-dom';
+import EvaluationPanel from "./Evaluation";
+
 
 const Canvas = () => {
   const { projectId } = useParams();
   const linksPath = "smooth";
 
   const cardsData = useMyStore((store) => store.cards);
+  const projectName = useMyStore((store) => store.projectName);
   const links = useMyStore((store) => store.links);
 
   const addTemplate = useMyStore((store) => store.addTemplate);
   const addCardData = useMyStore((store) => store.addCardData);
   const pullProject = useMyStore((store) => store.pullProject);
   const cleanStore = useMyStore((store) => store.cleanStore);
+  const setProjectName = useMyStore((store) => store.setProjectName);
 
   // Add a function to handle delete action
   const handleDelete = (cardId) => {
@@ -39,6 +43,7 @@ const Canvas = () => {
           id={card.uid}
           stage={card.stage}
           //   handleDelete={() => {}}
+          comments={card.comments}
           handleDelete={handleDelete}
           key={card.uid}
           text={card.description}
@@ -60,6 +65,19 @@ const Canvas = () => {
           color="#9CAFB7"
         />
       ))}
+
+      <div className="fixed mt-4 left-0 mb-4 ml-4 flex flex-col">
+        <input
+          type="text"
+          className="p-2 font-bold border-2"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          onBlur={()=>{}} // TODO optimize firebase update if necessary
+          placeholder="Enter Project Name"
+        />
+      </div>
+
+      <EvaluationPanel />
 
       <div className="fixed bottom-0 left-0 mb-4 ml-4 flex flex-col">
         {/* <p className="font-bold text-lg">Templates:</p>
@@ -91,20 +109,19 @@ const Canvas = () => {
 
         <p className="font-bold text-lg">Stages:</p>
         {
-          ["problem", "task", "data", "model", "train", "test", "deploy", "➕"].map((stage, index) => (
+          ["problem", "task", "data", "model", "train", "test", "deploy", "feedback", "➕"].map((stage, index) => (
             <button
               key={index}
               onClick={() => addCardData(stage)}
-              className={`rounded-lg p-1 my-1 ${
-                stage === 'problem' ? 'bg-problem' :
-                stage === 'task' ? 'bg-task' :
-                stage === 'data' ? 'bg-data' :
-                stage === 'model' ? 'bg-model' :
-                stage === 'train' ? 'bg-train' :
-                stage === 'test' ? 'bg-test' :
-                stage === 'deploy' ? 'bg-deploy' :
-                'bg-default'
-              }`}
+              className={`rounded-lg p-1 my-1 ${stage === 'problem' ? 'bg-problem' :
+                  stage === 'task' ? 'bg-task' :
+                    stage === 'data' ? 'bg-data' :
+                      stage === 'model' ? 'bg-model' :
+                        stage === 'train' ? 'bg-train' :
+                          stage === 'test' ? 'bg-test' :
+                            stage === 'deploy' ? 'bg-deploy' :
+                              stage === 'feedback' ? 'bg-feedback' : 'bg-default'                              
+                }`}
             >
               {stage.charAt(0).toUpperCase() + stage.slice(1)}
             </button>

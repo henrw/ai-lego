@@ -51,22 +51,10 @@ const Navbar = () => {
         {user ? (
           <>
             <Link
-              to="/home"
-              className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
-            >
-              Home
-            </Link>
-            <Link
               to="/about"
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
               About us
-            </Link>
-            <Link
-              to="/knowledge"
-              className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
-            >
-              Knowledge Base
             </Link>
             <Link
               to="/contact"

@@ -2,12 +2,16 @@ import React, { useRef, useState, useEffect } from "react";
 import { ItemTypes } from "../Constants";
 import Draggable from "react-draggable";
 import Xarrow from "react-xarrows";
-import useMyStore from "../../contexts/context";
+import useMyStore from "../../contexts/projectContext";
 import { shallow } from "zustand/shallow";
 import Popup from "reactjs-popup";
 import { v4 as uuidv4 } from "uuid";
 import { FaSave } from "react-icons/fa";
 import { FaEdit } from "react-icons/fa";
+import CommentComponent from "./Comment";
+import MessageBox from "./Message";
+import EvaluationBox from "./Evaluation";
+import { useUserAuth } from "../../authentication/UserAuthContext";
 
 const ConnectPointsWrapper = ({ cardId, handler, dragRef, cardRef }) => {
   const ref1 = useRef();
@@ -18,7 +22,7 @@ const ConnectPointsWrapper = ({ cardId, handler, dragRef, cardRef }) => {
   return (
     <React.Fragment>
       <div
-        className="connectPoint top-[calc(50%-7.5px)] right-0 absolute w-2 h-2 rounded-full bg-black"
+        className="connectPoint top-[calc(50%-7.5px)] right-1 absolute w-2 h-2 rounded-full bg-black"
         style={{
           ...position,
         }}
@@ -51,7 +55,7 @@ const ConnectPointsWrapper = ({ cardId, handler, dragRef, cardRef }) => {
           start={cardId}
           startAnchor={"right"}
           end={ref1}
-          color="black"
+          color="#9CAFB7"
         />
       ) : null}
     </React.Fragment>
@@ -88,70 +92,16 @@ const getBgColorClassFromId = (stage) => {
   return bgColorClass;
 };
 
-const CommentComponent = ({
-  comment,
-  handleReplyToComment,
-  level = 0,
-  allComments,
-}) => {
-  const [showReplyInput, setShowReplyInput] = useState(false);
-  const [replyText, setReplyText] = useState("");
-
-  const submitReply = () => {
-    handleReplyToComment(comment.id, replyText);
-    setReplyText("");
-    setShowReplyInput(false);
-  };
-
-  // Find child comments for the current comment
-  const childComments = allComments.filter((c) => c.parentId === comment.id);
-
-  return (
-    <div>
-      <div className={`ml-${level * 2} mt-2 border-l-2 border-gray-300 pl-4`}>
-        <div className="comment p-2">
-          <p>{comment.text}</p>
-          <button
-            className="text-blue-500 hover:text-blue-700 text-sm font-semibold"
-            onClick={() => setShowReplyInput(!showReplyInput)}
-          >
-            Reply
-          </button>
-          {showReplyInput && (
-            <div className="mt-2">
-              <textarea
-                className="w-full border border-gray-300 p-2 mb-2 rounded"
-                placeholder="Type your reply here..."
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-              />
-              <button
-                className="text-white bg-blue-500 hover:bg-blue-700 font-bold py-1 px-2 rounded text-sm"
-                onClick={submitReply}
-              >
-                Post Reply
-              </button>
-            </div>
-          )}
-        </div>
-        {childComments.map((childComment) => (
-          <CommentComponent
-            key={childComment.id}
-            comment={childComment}
-            handleReplyToComment={handleReplyToComment}
-            level={level + 1}
-            allComments={allComments}
-          />
-        ))}
-      </div>
-    </div>
-  );
-};
-export default function Card({ id, stage, handleDelete, text, handler, cardId }) {
+export default function Card({ id, stage, handleDelete, text, comments, handler, cardId }) {
+  const { user } = useUserAuth();
   const borderColorClass = getBorderColorClassFromId(id);
   const bgColorClass = getBgColorClassFromId(stage);
   const cardData = useMyStore(
     (store) => store.cards.filter((cardData) => cardData.uid === id)[0],
+    shallow
+  );
+  const evaluationData = useMyStore(
+    (store) => store.evaluations.filter(() => (true)), // TODO filter the card-matched evaluations only
     shallow
   );
   // Extract the stage description from cardData
@@ -162,7 +112,7 @@ export default function Card({ id, stage, handleDelete, text, handler, cardId })
   const cardRef = useRef();
 
   const renderStageNameTrigger = () => (
-    <div className={`${bgColorClass} p-1 py-0 rounded text-center text-sm`}>
+    <div className={`${bgColorClass} p-1 py-0 rounded text-center`}>
       {stageName}
     </div>
   );
@@ -174,6 +124,7 @@ export default function Card({ id, stage, handleDelete, text, handler, cardId })
   };
 
   const addLink = useMyStore((store) => store.addLink);
+  const addComment = useMyStore((store) => store.addComment);
   const stageName =
     stage.charAt(0).toUpperCase() + stage.slice(1);
 
@@ -184,136 +135,61 @@ export default function Card({ id, stage, handleDelete, text, handler, cardId })
     useMyStore.getState().setCardDescription(cardId, newText);
   };
 
-  const handleReplyToComment = (parentId, replyText) => {
-    if (!replyText) return; // Don't add empty replies
+  // const handleReplyToComment = (parentId, replyText) => {
+  //   if (!replyText) return; // Don't add empty replies
 
-    const newReply = {
-      id: uuidv4(),
-      text: replyText,
-      parentId,
-      childComments: [],
-    };
+  //   const newReply = {
+  //     id: uuidv4(),
+  //     text: replyText,
+  //     parentId,
+  //     childComments: [],
+  //   };
 
-    /// Add newReply to comments state
-    setComments((currentComments) => {
-      const updatedComments = [...currentComments, newReply];
-      return updatedComments;
-    });
-  };
+  //   /// Add newReply to comments state
+  //   setComments((currentComments) => {
+  //     const updatedComments = [...currentComments, newReply];
+  //     return updatedComments;
+  //   });
+  // };
 
   // Add state to control the visibility of the popup
   const [showSmallCommentBox] = useState(true); // New state for small comment box
 
   // State to keep track of comment boxes
   const [hasComments, setHasComments] = useState(false);
-  const [commentBoxes, setCommentBoxes] = useState([]);
   const [open, setOpen] = useState(false);
   const closeModal = () => setOpen(false);
-  const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
-  const [showComments, setShowComments] = useState(true);
+  const [showComments, setShowComments] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
 
-  // Function to toggle the visibility of the comment boxes
-  const toggleCommentsVisibility = () => {
-    setShowComments(!showComments);
-  };
-
-  // Function to add a new comment box
-  const addCommentBox = () => {
-    setCommentBoxes(commentBoxes.concat({ id: uuidv4(), text: "" }));
-    if (!hasComments) {
-      setHasComments(true);
-    }
-  };
-
-  // Function to update the text of a specific comment box
-  const updateCommentBoxText = (id, text) => {
-    setCommentBoxes(
-      commentBoxes.map((box) => (box.id === id ? { ...box, text } : box))
-    );
-  };
+  // // Function to update the text of a specific comment box
+  // const updateCommentBoxText = (id, text) => {
+  //   setCommentBoxes(
+  //     commentBoxes.map((box) => (box.id === id ? { ...box, text } : box))
+  //   );
+  // };
 
   // Add a Tailwind CSS class for fixed width and flexible height
   const cardClass = "relative bg-gray-200 rounded shadow p-2 w-60";
 
-  const handleSaveComment = (input) => {
-    // Regular expression to check if the input is a UUID
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    const isUuid = uuidRegex.test(input);
 
-    // Editing or Adding new comment from a comment box
-    if (isUuid) {
-      const boxIndex = commentBoxes.findIndex((box) => box.id === input);
-      if (boxIndex === -1) return;
+  // // This function toggles edit mode for a comment box
+  // const toggleEdit = (cardId, commentId = null) => {
+  //   const boxIndex = commentBoxes.findIndex((box) => box.id === cardId);
+  //   if (boxIndex === -1) return;
 
-      const box = commentBoxes[boxIndex];
-      if (!box.text.trim()) return;
+  //   const updatedBoxes = [...commentBoxes];
+  //   const box = updatedBoxes[boxIndex];
 
-      if (box.commentId) {
-        // Editing existing comment
-        setComments((currentComments) =>
-          currentComments.map((comment) =>
-            comment.id === box.commentId
-              ? { ...comment, text: box.text }
-              : comment
-          )
-        );
-      } else {
-        // Adding new comment linked to a comment box
-        const newComment = {
-          id: uuidv4(),
-          text: box.text,
-          parentId: null,
-          childComments: [],
-        };
-        setComments((currentComments) => [...currentComments, newComment]);
-        // Update the comment box to include the comment ID
-        const updatedBoxes = [...commentBoxes];
-        updatedBoxes[boxIndex] = { ...box, commentId: newComment.id };
-        setCommentBoxes(updatedBoxes);
-      }
-    } else if (typeof input === "string") {
-      // Adding new comment from the popup
-      const text = input;
-      if (text.trim()) {
-        const newComment = {
-          id: uuidv4(),
-          text: text,
-          parentId: null,
-          childComments: [],
-        };
-        setComments((currentComments) => [...currentComments, newComment]);
-
-        // Add a corresponding new comment box
-        const newCommentBox = {
-          id: uuidv4(),
-          text: text,
-          isEditing: false,
-          commentId: newComment.id,
-        };
-        setCommentBoxes((currentBoxes) => [...currentBoxes, newCommentBox]);
-        setCommentText("");
-      }
-    }
-  };
-
-  // This function toggles edit mode for a comment box
-  const toggleEdit = (cardId, commentId = null) => {
-    const boxIndex = commentBoxes.findIndex((box) => box.id === cardId);
-    if (boxIndex === -1) return;
-
-    const updatedBoxes = [...commentBoxes];
-    const box = updatedBoxes[boxIndex];
-
-    // Toggle the isEditing state and set commentId if provided
-    updatedBoxes[boxIndex] = {
-      ...box,
-      isEditing: !box.isEditing,
-      commentId: commentId ?? box.commentId, // Keep the same commentId if not provided
-    };
-    setCommentBoxes(updatedBoxes);
-  };
+  //   // Toggle the isEditing state and set commentId if provided
+  //   updatedBoxes[boxIndex] = {
+  //     ...box,
+  //     isEditing: !box.isEditing,
+  //     commentId: commentId ?? box.commentId, // Keep the same commentId if not provided
+  //   };
+  //   setCommentBoxes(updatedBoxes);
+  // };
 
   return (
     <Draggable
@@ -325,16 +201,15 @@ export default function Card({ id, stage, handleDelete, text, handler, cardId })
       }}
     >
       <div
-        className={`absolute bg-gray-200 rounded shadow p-2 ${
-          showComments ? "" : "min-h-[100px]"
-        } `} // w-96 for fixed width
+        className={`absolute bg-gray-200 rounded shadow p-2 ${showComments ? "" : "min-h-[100px]"
+          } `} // w-96 for fixed width
         id={id}
         ref={cardRef}
         style={{ paddingBottom: "0" }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           if (e.dataTransfer.getData("arrow") != cardId) {
-            const refs = {start: e.dataTransfer.getData("arrow"), end: id};
+            const refs = { start: e.dataTransfer.getData("arrow"), end: id };
             addLink(refs);
           }
         }}
@@ -345,8 +220,17 @@ export default function Card({ id, stage, handleDelete, text, handler, cardId })
         >
           ❌
         </button>
-        <div className={`absolute top-1 left-1 `}>
-          <Popup
+        <div className={`absolute top-1 left-1 flex flex-row items-center`}>
+          {renderStageNameTrigger()}
+          {
+            evaluationData.length !== 0 && (
+              <button className="ml-1 bg-red-500 px-1.5 py-0 rounded text-white text-sm"
+                onClick={() => { setShowComments(true); setTimeout(refreshLinks, 0); }}>
+                {evaluationData.length}
+              </button>
+            )
+          }
+          {/* <Popup
             trigger={renderStageNameTrigger} // Set the trigger to the function that renders the stage name
             on="hover" // Set the Popup to trigger on hover
             position={["top center", "bottom right", "bottom left"]} // Adjust the position as needed
@@ -376,129 +260,175 @@ export default function Card({ id, stage, handleDelete, text, handler, cardId })
                 boxShadow: "0px 0px 10px rgba(0,0,0,0.1)",
               }}
             >
-              {/* Content of your hover box */}
-
               <span>{prompt}</span>
             </div>
-          </Popup>
+          </Popup> */}
         </div>
 
-        <ConnectPointsWrapper cardId={id} {...{handler, dragRef, cardRef }} />
+        <ConnectPointsWrapper cardId={id} {...{ handler, dragRef, cardRef }} />
 
-        <div className="mt-4">
-          <textarea
-            className="p-3"
-            value={text}
-            onChange={(e) => handleTextChange(e.target.value, id)}
-            placeholder="Enter text here..."
-          />
-          <div className="text-lg -mt-2 ">
-            {/* Negative margin to p */}
-            <button className="pr-1" onClick={addCommentBox}>
-              💬
-            </button>
+        <div className="mt-4 flex flex-row">
+          {/* <div> */}
+          <div className={`pr-2 ${showComments && "vertical-line-container"}`}>
+            {showPrompt && (
+              <div className="flex flex-col w-60">
+                <div className="p-3 bg-gray-100">
+                  {prompt}
+                </div>
+              </div>
+            )}
+            <textarea
+              className="p-3 mt-2 w-60"
+              value={text}
+              onChange={(e) => handleTextChange(e.target.value, id)}
+              onClick={() => { setShowPrompt(!showPrompt); setTimeout(refreshLinks, 0); }}
+              onDoubleClick={() => { }}
+              placeholder="Describe this stage..."
+            />
 
-            <button
-              className="pr-1"
-              onClick={() => {
-                console.log("Button clicked, current state:", open);
-                setOpen((o) => !o);
-              }}
-            >
-              🔍
-            </button>
+            <div className="text-lg mt-2 ">
+              <button className="pr-1" onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
+                💬
+              </button>
 
-            {hasComments && (
+              {/* <button
+                className="pr-1"
+                onClick={() => {
+                  console.log("Button clicked, current state:", open);
+                  setOpen((o) => !o);
+                }}
+              >
+                🔍
+              </button> */}
+            </div>
+
+            {/* {hasComments && (
               <button onClick={toggleCommentsVisibility}>
                 {showComments ? "⬆️" : "⬇️"}
               </button>
-            )}
+            )} */}
           </div>
 
-          {/* Render comment boxes */}
-          {showComments &&
-            commentBoxes.map((box) => (
-              <div key={box.id} className="flex items-center space-x-1">
-                <textarea
-                  className="block p-1 w-full lg:w-5/6 border-gray-300 rounded mb-2"
-                  placeholder="Add a comment..."
-                  value={box.text}
-                  onChange={(e) => updateCommentBoxText(box.id, e.target.value)}
-                  disabled={!box.isEditing}
+
+          {showComments && (
+            <div className="pl-2 w-48 text-sm">
+              <div className="overflow-y-auto overflow-x-hidden max-h-80 h-100">
+                {
+                  comments.map((comment) => (
+                    <MessageBox key={comment.uid} commentId={comment.uid} name={comment.by} time={typeof comment.lastUpdatedTime === 'string' ? comment.lastUpdatedTime : comment.lastUpdatedTime.toDate().toLocaleDateString('en-US') || "Now"} profileImg={"TODO"} message={comment.text} />
+                    // <div key={box.id} className="flex items-center space-x-1">
+                    //   <textarea
+                    //     className="block p-1 w-full lg:w-5/6 border-gray-300 rounded mb-2"
+                    //     placeholder="Add a comment..."
+                    //     value={box.text}
+                    //     onChange={(e) => updateCommentBoxText(box.id, e.target.value)}
+                    //     disabled={!box.isEditing}
+                    //   />
+                    //   {box.isEditing ? (
+                    //     <button
+                    //       className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-1 rounded text-sm "
+                    //       onClick={() => handleSaveComment(box.id)}
+                    //     >
+                    //       <FaSave />
+                    //     </button>
+                    //   ) : (
+                    //     <button
+                    //       className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-1 rounded text-sm  "
+                    //       onClick={() => toggleEdit(box.id, box.commentId)}
+                    //     >
+                    //       <FaEdit />
+                    //     </button>
+                    //   )}
+                    // </div>
+                  ))
+                }
+                {
+                  evaluationData.map((evaluation) => (
+                    <EvaluationBox evaluationData={evaluation} />
+                  ))
+                }
+                <br />
+                <br />
+              </div>
+
+              <div className="absolute bottom-2 h-max flex flex-row items-center rounded-3">
+                <input
+                  type="text"
+                  className="w-full rounded-3 p-1"
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Enter Comment"
                 />
-                {box.isEditing ? (
-                  <button
-                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-1 rounded text-sm "
-                    onClick={() => handleSaveComment(box.id)}
-                  >
-                    <FaSave />
-                  </button>
-                ) : (
-                  <button
-                    className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-1 rounded text-sm  "
-                    onClick={() => toggleEdit(box.id, box.commentId)}
-                  >
-                    <FaEdit />
-                  </button>
-                )}
-              </div>
-            ))}
-
-          <Popup open={open} closeOnDocumentClick onClose={closeModal}>
-            {(close) => (
-              <div className=" w-[500px] p-3 bg-white rounded shadow-lg border-8 border-gray-200 text-gray-700 ">
                 <button
-                  className="text-black absolute top-0 right-0 mt-4 mr-4"
-                  onClick={close}
-                >
-                  &times;
+                  onClick={() => {
+                    addComment(user.displayName, id, commentText);
+                    setCommentText(""); // Clear the input after saving the comment
+                  }}
+                  type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm p-2 text-center inline-flex items-center me-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                  <svg className="w-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
+                    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M1 5h12m0 0L9 1m4 4L9 9" />
+                  </svg>
+                  <span className="sr-only">Icon description</span>
                 </button>
-                <div
-                  className={`text-lg font-bold border-b  p-1 py-0 mb-2  ${bgColorClass} rounded-lg`}
-                >
-                  {stageName}
-                </div>
-
-                <div className="mb-4 text-sm overflow-auto">{text}</div>
-                {/* Comment section */}
-
-                {showSmallCommentBox && (
-                  <div>
-                    <textarea
-                      className="comment-box w-full border border-gray-300 p-2 mb-2 rounded" // Set the width to full
-                      placeholder="Type your comment here..."
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                    ></textarea>
-                    <button
-                      className="text-white font-bold py-1 px-2 rounded text-sm"
-                      style={{ backgroundColor: "cornflowerblue" }} // Inline style to set the button color
-                      onClick={() => {
-                        handleSaveComment(commentText);
-                        setCommentText(""); // Clear the input after saving the comment
-                      }}
-                    >
-                      Save
-                    </button>
-                  </div>
-                )}
-                <div className={`comments-section ${borderColorClass}`}>
-                  {comments
-                    .filter((comment) => !comment.parentId)
-                    .map((comment) => (
-                      <CommentComponent
-                        key={comment.id}
-                        comment={comment}
-                        handleReplyToComment={handleReplyToComment}
-                        level={0}
-                        allComments={comments}
-                      />
-                    ))}
-                </div>
               </div>
-            )}
-          </Popup>
+
+            </div>
+          )
+          }
         </div>
+        {/* <Popup open={open} closeOnDocumentClick onClose={closeModal}>
+          {(close) => (
+            <div className=" w-[500px] p-3 bg-white rounded shadow-lg border-8 border-gray-200 text-gray-700 ">
+              <button
+                className="text-black absolute top-0 right-0 mt-4 mr-4"
+                onClick={close}
+              >
+                &times;
+              </button>
+              <div
+                className={`text-lg font-bold border-b  p-1 py-0 mb-2  ${bgColorClass} rounded-lg`}
+              >
+                {stageName}
+              </div>
+
+              <div className="mb-4 text-sm overflow-auto">{text}</div>
+
+              {showSmallCommentBox && (
+                <div>
+                  <textarea
+                    className="comment-box w-full border border-gray-300 p-2 mb-2 rounded" // Set the width to full
+                    placeholder="Type your comment here..."
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                  ></textarea>
+                  <button
+                    className="text-white font-bold py-1 px-2 rounded text-sm"
+                    style={{ backgroundColor: "cornflowerblue" }} // Inline style to set the button color
+                    onClick={() => {
+                      handleSaveComment(commentText);
+                      setCommentText(""); // Clear the input after saving the comment
+                    }}
+                  >
+                    Save
+                  </button>
+                </div>
+              )}
+              <div className={`comments-section ${borderColorClass}`}>
+                {comments
+                  .filter((comment) => !comment.parentId)
+                  .map((comment) => (
+                    <CommentComponent
+                      key={comment.id}
+                      comment={comment}
+                      handleReplyToComment={handleReplyToComment}
+                      level={0}
+                      allComments={comments}
+                    />
+                  ))}
+              </div>
+            </div>
+          )}
+        </Popup> */}
       </div>
     </Draggable>
   );
