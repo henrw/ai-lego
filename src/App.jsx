@@ -1,5 +1,4 @@
 import Canvas from "./components/Canvas";
-import Menu from "./components/Menu";
 import { useState } from "react";
 import { DndContext } from "@dnd-kit/core";
 

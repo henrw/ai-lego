@@ -77,9 +77,13 @@ const Home = () => {
           projectDocSnap.forEach(doc => {
             const name = doc.data().name;
             const lastUpdatedTime = doc.data().lastUpdatedTime.toDate().toLocaleDateString('en-US');
+            const lastUpdatedTimeRaw = doc.data().lastUpdatedTime;
             const lastUpdatedBy = doc.data().lastUpdatedBy;
-            projects.push({ uid: doc.data().uid, name: name, lastUpdatedTime: lastUpdatedTime, lastUpdatedBy: lastUpdatedBy });
+            projects.push({ uid: doc.data().uid, name: name, lastUpdatedTime: lastUpdatedTime, lastUpdatedTimeRaw: lastUpdatedTimeRaw, lastUpdatedBy: lastUpdatedBy });
           });
+          // Sorting the projects in the reverse chronological order
+          projects.sort((a, b) => b.lastUpdatedTimeRaw - a.lastUpdatedTimeRaw);
+
           setProjectsInfo(projects);
         }
       }

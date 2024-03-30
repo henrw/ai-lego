@@ -1,19 +1,24 @@
 import React, { useRef, useState, useEffect } from "react";
-import useMyStore from "../../contexts/projectContext";
+import useMyStore from "../../../contexts/projectContext";
 
-export default function MessageBox({ commentId, name, time, profileImg, message }) {
+export default function EvaluationBox({ evaluationData }) {
 
-    const deleteComment = useMyStore((store) => store.deleteComment);
+    const { by, time, profileImg, problem, value, stakeholders, impact, open } = evaluationData;
+
     const [dropdownState, setDropdownState] = useState(false);
     return (
         <div className="flex items-start mb-1">
-            <div className="flex flex-col w-full leading-1.5 p-1 bg-gray-400 rounded-xl">
+            <div className="flex flex-col w-full leading-1.5 p-1 bg-red-400 rounded-xl">
                 <div className="flex items-center space-x-2 rtl:space-x-reverse">
                     <img className="w-8 h-8 rounded-full" src="/profile-pic.png" alt="Jese image" />
-                    <span className="text-sm font-semibold text-white">{name}</span>
+                    <span className="text-sm font-semibold text-white">{by}</span>
                     <span className="text-sm ml-auto font-normal text-gray-500">{time}</span>
                 </div>
-                <p className="text-sm font-normal py-2.5 text-white">{message}</p>
+                <p className="text-sm font-normal py-2.5 text-white">Problem: {problem}</p>
+                <p className="text-sm font-normal py-2.5 text-white">Value: {value}</p>
+                <p className="text-sm font-normal py-2.5 text-white">Stakeholders: {stakeholders}</p>
+                <p className="text-sm font-normal py-2.5 text-white">Impact: {impact}</p>
+                <p className="text-sm font-normal py-2.5 text-white">Open-ended Comment: {open}</p>
                 {/* <span className="text-sm font-normal text-gray-500 dark:text-gray-400">Delivered</span> */}
             </div>
             <div className="relative right-4"> {/* Add this wrapper with a relative position */}
@@ -29,9 +34,9 @@ export default function MessageBox({ commentId, name, time, profileImg, message 
                         <div id="dropdownDots" className={`absolute right-0 z-30 bg-white divide-y divide-gray-100 rounded-lg shadow w-40 dark:bg-gray-700 dark:divide-gray-600`}>
                             <ul className="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownMenuIconButton">
                                 <li>
-                                    <button className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Reply</button>
+                                    <button className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Address</button>
                                 </li>
-                                <li>
+                                {/* <li>
                                     <button className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Forward</button>
                                 </li>
                                 <li>
@@ -42,7 +47,7 @@ export default function MessageBox({ commentId, name, time, profileImg, message 
                                 </li>
                                 <li>
                                     <button onClick={()=>{deleteComment(commentId);}} className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Delete</button>
-                                </li>
+                                </li> */}
                             </ul>
                         </div>
                     )

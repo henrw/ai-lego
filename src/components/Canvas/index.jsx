@@ -2,15 +2,29 @@ import React, { useEffect } from "react";
 import Card from "./Card";
 import Column from "./Column";
 import { useState } from "react";
-import useMyStore from "../contexts/projectContext";
+import useMyStore, { prompts } from "../../contexts/projectContext";
 import Xarrow from "react-xarrows";
 import { useParams } from 'react-router-dom';
 import EvaluationPanel from "./Evaluation";
+import CollaboratorModal from "./CollaboratorModal";
 
 
 const Canvas = () => {
+
+  // Collaborator modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+
   const { projectId } = useParams();
   const linksPath = "smooth";
+
+  const [hovered, setHovered] = useState("");
+  const [hoverY, setHoverY] = useState(0);
 
   const cardsData = useMyStore((store) => store.cards);
   const projectName = useMyStore((store) => store.projectName);
@@ -59,27 +73,33 @@ const Canvas = () => {
           start={ar.start}
           end={ar.end}
           startAnchor={"right"}
-          // endAnchor={"left"}
+          endAnchor={"left"}
           key={ar.start + "." + ar.end}
           labels={""}
           color="#9CAFB7"
         />
       ))}
 
-      <div className="fixed mt-4 left-0 mb-4 ml-4 flex flex-col">
+      <div className="flex flex-row fixed mt-4 left-0 mb-4 ml-4 flex flex-col">
         <input
           type="text"
-          className="p-2 font-bold border-2"
+          className="p-2 border-2"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
-          onBlur={()=>{}} // TODO optimize firebase update if necessary
+          onBlur={() => { }} // TODO optimize firebase update if necessary
           placeholder="Enter Project Name"
         />
+        <button
+          onClick={openModal}
+          className="ml-1 bg-blue-500 hover:bg-blue-700 text-white py-2 px-3 rounded">
+          Share
+        </button>
       </div>
 
+      <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
       <EvaluationPanel />
 
-      <div className="fixed bottom-0 left-0 mb-4 ml-4 flex flex-col">
+      <div className="fixed bottom-0 left-0 mb-4 ml-4">
         {/* <p className="font-bold text-lg">Templates:</p>
         <button
           onClick={() => addTemplate("empty")}
@@ -107,26 +127,46 @@ const Canvas = () => {
         </button>
         <br></br> */}
 
-        <p className="font-bold text-lg">Stages:</p>
-        {
-          ["problem", "task", "data", "model", "train", "test", "deploy", "feedback", "➕"].map((stage, index) => (
-            <button
-              key={index}
-              onClick={() => addCardData(stage)}
-              className={`rounded-lg p-1 my-1 ${stage === 'problem' ? 'bg-problem' :
-                  stage === 'task' ? 'bg-task' :
-                    stage === 'data' ? 'bg-data' :
-                      stage === 'model' ? 'bg-model' :
-                        stage === 'train' ? 'bg-train' :
-                          stage === 'test' ? 'bg-test' :
-                            stage === 'deploy' ? 'bg-deploy' :
-                              stage === 'feedback' ? 'bg-feedback' : 'bg-default'                              
-                }`}
-            >
-              {stage.charAt(0).toUpperCase() + stage.slice(1)}
-            </button>
-          ))
-        }
+        <div className="flex flex-row">
+          <div className="flex flex-col">
+            <p className="font-bold text-lg">Stages:</p>
+            {
+              ["problem", "task", "data", "model", "train", "test", "deploy", "feedback", "➕"].map((stage, index) => (
+                <button
+                  key={index}
+                  onClick={() => addCardData(stage)}
+                  onMouseEnter={(e) => {
+                    const rect = e.target.getBoundingClientRect();
+                    const topPosition = rect.top + window.pageYOffset;
+                    setHovered(stage);
+                    setHoverY(topPosition);
+                  }}
+                  onMouseLeave={() => {
+                    setHovered("");
+                  }}
+                  className={`rounded-lg w-[90px] p-1 my-1 ${stage === 'problem' ? 'bg-problem' :
+                      stage === 'task' ? 'bg-task' :
+                        stage === 'data' ? 'bg-data' :
+                          stage === 'model' ? 'bg-model' :
+                            stage === 'train' ? 'bg-train' :
+                              stage === 'test' ? 'bg-test' :
+                                stage === 'deploy' ? 'bg-deploy' :
+                                  stage === 'feedback' ? 'bg-feedback' : 'bg-default'
+                    }`}
+                >
+                  {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                </button>
+              ))
+            }
+          </div>
+          <div
+            className={`h-min w-[300px] rounded-lg bg-black text-white text-center fixed left-[100px] z-[1001] transition-opacity duration-300 ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
+            style={{
+              top: `${hoverY}px`
+            }}>
+            {prompts[hovered]}
+          </div>
+        </div>
         {/* <button
           onClick={() => addCardData("design")}
           className="bg-design"
