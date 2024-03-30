@@ -147,7 +147,7 @@ const cardsDatatemplates = {
   },
 };
 
-const prompts = {
+export const prompts = {
   problem:
     "Brief the problem or challenge that can be solved by AI in simple words, highlighting its significance and potential impact on target users or stakeholders.",
   task: "Explain how AI focuses on the specific task that aims to solve the problem.",
@@ -490,7 +490,6 @@ const myStore = (set) => ({
       }
     }
   },
-
   deleteComment: async (commentId) => {
     const { cards } = useMyStore.getState();
 

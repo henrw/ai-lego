@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from "react";
-import { useUserAuth } from "../authentication/UserAuthContext";
-import useMyStore from "../contexts/projectContext";
+import { useUserAuth } from "../../authentication/UserAuthContext";
+import useMyStore from "../../contexts/projectContext";
 
 export default function EvaluationPanel() {
     const [isExpanded, setIsExpanded] = useState(false);
@@ -73,7 +73,7 @@ export default function EvaluationPanel() {
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                    onClick={() => { addEvaluation(user.displayName, {problem: problemText, value: valueText, stakeholder: stakeholderText, impact: impactText, open: openText}) }}>
+                            onClick={() => { addEvaluation(user.displayName, { problem: problemText, value: valueText, stakeholder: stakeholderText, impact: impactText, open: openText }) }}>
                             Submit
                         </button>
                     </>

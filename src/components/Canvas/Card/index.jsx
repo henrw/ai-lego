@@ -1,8 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
-import { ItemTypes } from "../Constants";
 import Draggable from "react-draggable";
 import Xarrow from "react-xarrows";
-import useMyStore from "../../contexts/projectContext";
+import useMyStore from "../../../contexts/projectContext";
 import { shallow } from "zustand/shallow";
 import Popup from "reactjs-popup";
 import { v4 as uuidv4 } from "uuid";
@@ -11,7 +10,7 @@ import { FaEdit } from "react-icons/fa";
 import CommentComponent from "./Comment";
 import MessageBox from "./Message";
 import EvaluationBox from "./Evaluation";
-import { useUserAuth } from "../../authentication/UserAuthContext";
+import { useUserAuth } from "../../../authentication/UserAuthContext";
 
 const ConnectPointsWrapper = ({ cardId, handler, dragRef, cardRef }) => {
   const ref1 = useRef();
@@ -216,9 +215,11 @@ export default function Card({ id, stage, handleDelete, text, comments, handler,
       >
         <button
           onClick={() => handleDelete(id, cardId)}
-          className="absolute top-0 right-0 text p-1"
+          className="absolute top-0 right-0 text p-1 text-gray-400 hover:text-red-500"
         >
-          ❌
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-6 h-6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
         </button>
         <div className={`absolute top-1 left-1 flex flex-row items-center`}>
           {renderStageNameTrigger()}
@@ -281,7 +282,7 @@ export default function Card({ id, stage, handleDelete, text, comments, handler,
               className="p-3 mt-2 w-60"
               value={text}
               onChange={(e) => handleTextChange(e.target.value, id)}
-              onClick={() => { setShowPrompt(!showPrompt); setTimeout(refreshLinks, 0); }}
+              onClick={() => { if (!showComments) {setShowPrompt(!showPrompt); setTimeout(refreshLinks, 0);} }}
               onDoubleClick={() => { }}
               placeholder="Describe this stage..."
             />
