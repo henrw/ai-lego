@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 import { useUserAuth } from "../authentication/UserAuthContext";
 import { useLocation } from "react-router-dom";
 import { db } from "../firebase"; // Ensure you have this import
-import { doc, getDoc, updateDoc, addDoc, collection, arrayUnion, query, where, getDocs, serverTimestamp } from "firebase/firestore"; // Import Firestore document update functions
+import { doc, getDoc, updateDoc, addDoc, deleteDoc, collection, arrayUnion, arrayRemove, query, where, getDocs, serverTimestamp } from "firebase/firestore"; // Import Firestore document update functions
 import {
   ref,
   uploadBytes,
@@ -14,6 +14,7 @@ import {
 } from "firebase/storage";
 import { storage } from "../firebase";
 import ProfileModal from "./ProfileModal"; // Import the ProfileModal component
+import ThreeDotMenu from "./Canvas/ThreeDotMenu";
 
 const Home = () => {
   const { user } = useUserAuth();
@@ -216,6 +217,7 @@ const Home = () => {
       userIds: [user.uid],
       lastUpdatedTime: serverTimestamp(),
       lastUpdatedBy: user.uid,
+      canvasScale: { x: 1.1, y: 1.1 },
     });
 
     // For quick filtering
@@ -228,6 +230,21 @@ const Home = () => {
     });
 
     navigate(`/project/${docRef.id}`);
+  };
+
+  const deleteProject = async (projectId) => {
+    const newProjectsInfo = projectsInfo.filter(project => project.uid != projectId);
+    setProjectsInfo(newProjectsInfo);
+    try {
+      await deleteDoc(doc(db, "projects", projectId));
+
+      await updateDoc(doc(db, "users", user.uid), {
+        projectIds: arrayRemove(projectId)
+      });
+  
+    } catch (error) {
+      console.error("Error deleting project: ", error);
+    }
   };
 
   const handleLoginRedirect = () => {
@@ -282,7 +299,11 @@ const Home = () => {
                   <Card.Body style={{ ...cardStyle }}>
                     <Card.Img variant="top" src="/project-thumbnail-example.png" />
                     <Card.Title>{item.name}</Card.Title>
-                    <div>Last Updated: {item.lastUpdatedTime}</div>
+                    <div className="flex flex-row items-center justify-between">
+                      <div>Last Updated: {item.lastUpdatedTime}</div>
+                      <ThreeDotMenu deleteProject={deleteProject} projectId={item.uid}/>
+                    </div>
+
                     {/* <div>Last Updated By: {item.lastUpdatedBy}</div> */}
                     {/* Other project details */}
                   </Card.Body>

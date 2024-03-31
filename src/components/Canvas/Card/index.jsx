@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import Draggable from "react-draggable";
 import Xarrow from "react-xarrows";
-import useMyStore from "../../../contexts/projectContext";
+import useMyStore, {colorClasses} from "../../../contexts/projectContext";
 import { shallow } from "zustand/shallow";
 import Popup from "reactjs-popup";
 import { v4 as uuidv4 } from "uuid";
@@ -36,8 +36,8 @@ const ConnectPointsWrapper = ({ cardId, handler, dragRef, cardRef }) => {
           const { x, y } = dragRef.current.state;
           setPosition({
             position: "fixed",
-            left: e.clientX - x - offsetLeft,
-            top: e.clientY - y - offsetTop,
+            left: e.clientX + window.scrollX - x - offsetLeft,
+            top: e.clientY + window.scrollY - y - offsetTop,
             transform: "none",
             opacity: 0,
           });
@@ -59,23 +59,6 @@ const ConnectPointsWrapper = ({ cardId, handler, dragRef, cardRef }) => {
       ) : null}
     </React.Fragment>
   );
-};
-const colorClasses = {
-  problem: "problem",
-  task: "task",
-  data: "data",
-  model: "model",
-  train: "train",
-  test: "test",
-  deploy: "deploy",
-  design: "design",
-  develop: "develop",
-  modelEvaluation: "modelEva",
-  modelDevelopment: "modelDev",
-  MLOps: "MLOps",
-  feedback: "feedback",
-  problemDef: "problemDef",
-  "➕": "➕",
 };
 
 const getBorderColorClassFromId = (stage) => {
@@ -124,6 +107,8 @@ export default function Card({ id, stage, handleDelete, text, comments, handler,
 
   const addLink = useMyStore((store) => store.addLink);
   const addComment = useMyStore((store) => store.addComment);
+  const extendCanvasRight = useMyStore((store) => store.extendCanvasRight);
+  const extendCanvasBottom = useMyStore((store) => store.extendCanvasBottom);
   const stageName =
     stage.charAt(0).toUpperCase() + stage.slice(1);
 
@@ -197,6 +182,13 @@ export default function Card({ id, stage, handleDelete, text, comments, handler,
       position={cardData.position}
       onDrag={(e) => {
         refreshLinks();
+
+        // if (window.scrollX + e.clientX >= document.documentElement.scrollWidth - 50) {
+          extendCanvasRight();
+        // }
+        // if (window.scrollY + e.clientY >= document.documentElement.scrollHeight - 50) {
+          extendCanvasBottom();
+        // }
       }}
     >
       <div
@@ -269,8 +261,8 @@ export default function Card({ id, stage, handleDelete, text, comments, handler,
         <ConnectPointsWrapper cardId={id} {...{ handler, dragRef, cardRef }} />
 
         <div className="mt-4 flex flex-row">
-          {/* <div> */}
-          <div className={`pr-2 ${showComments && "vertical-line-container"}`}>
+          <div>
+          {/* <div className={`pr-2 ${showComments && "vertical-line-container"}`}> */}
             {showPrompt && (
               <div className="flex flex-col w-60">
                 <div className="p-3 bg-gray-100">

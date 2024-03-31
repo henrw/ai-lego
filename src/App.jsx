@@ -49,7 +49,7 @@ const App = () => {
   const [isDropped, setIsDropped] = useState(false);
   const draggableMarkup = <Draggable>Drag me</Draggable>;
   return (
-    <div className="flex h-[calc(100vh-112px)]">
+    <div className="flex h-full">
       <Canvas />
     </div>
   );

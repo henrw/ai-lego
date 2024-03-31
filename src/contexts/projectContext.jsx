@@ -163,12 +163,57 @@ export const prompts = {
     "Explain how feedback is gathered from users or stakeholders to improve the AI system and highlight how it helps the iteration of AI development.",
 };
 
+export const colorClasses = {
+  problem: "problem",
+  task: "task",
+  data: "data",
+  model: "model",
+  train: "train",
+  test: "test",
+  deploy: "deploy",
+  design: "design",
+  develop: "develop",
+  modelEvaluation: "modelEva",
+  modelDevelopment: "modelDev",
+  MLOps: "MLOps",
+  feedback: "feedback",
+  problemDef: "problemDef",
+  "➕": "➕",
+};
+
 const myStore = (set) => ({
   projectName: "",
   projectId: "",
   cards: [],
   links: [],
   evaluations: [],
+  canvasScale: { x: 1.1, y: 1.1 },
+  isRescaled: false,
+
+  extendCanvasRight: async () => {
+    const {canvasScale} = useMyStore.getState();
+
+    const totalPageWidth = document.documentElement.scrollWidth;
+    const viewportWidth = window.innerWidth;
+    set((state) => ({
+      ...state,
+      canvasScale: { x: totalPageWidth / viewportWidth, y: state.canvasScale.y },
+      isRescaled: true,
+    }));
+    // window.scrollBy((totalPageWidth / viewportWidth - canvasScale.x) * viewportWidth, 0);
+  },
+  extendCanvasBottom: async () => {
+    const {canvasScale} = useMyStore.getState();
+    const totalPageHeight = document.documentElement.scrollHeight;
+    const viewportHeight = window.innerHeight;
+    set((state) => ({
+      ...state,
+      canvasScale: { x: state.canvasScale.x, y: totalPageHeight / viewportHeight },
+      isRescaled: true,
+    }));
+    // window.scrollBy(0, (totalPageHeight / viewportHeight - canvasScale.y) * viewportHeight);
+  },
+
 
   pullProject: async (projectId) => {
     const projectDocSnap = await getDoc(doc(db, "projects", projectId));
@@ -212,6 +257,8 @@ const myStore = (set) => ({
       links: projectData.links,
       cards: cards,
       evaluations: evaluations,
+      canvasScale: projectData.canvasScale || { x: 1.1, y: 1.1 },
+      isRescaled: false,
     }));
   },
 
@@ -338,17 +385,27 @@ const myStore = (set) => ({
     }
   },
   setCardPosition: async (id, position) => {
+    const { isRescaled, canvasScale, projectId } = useMyStore.getState(); // Move this outside the async operation
+    
     set((state) => ({
       ...state,
       cards: state.cards.map((card) =>
         card.uid === id ? { ...card, position: position } : card
       ),
     }));
+    
     const cardDocRef = doc(db, "cards", id);
     try {
       await updateDoc(cardDocRef, { position: position });
+      
+      if (isRescaled) {
+        const projectDocRef = doc(db, "projects", projectId);
+        await updateDoc(projectDocRef, { canvasScale: canvasScale });
+        
+        set(({isRescaled: false}));
+      }
     } catch (error) {
-      console.error("Error updating card description: ", error);
+      console.error("Error updating card position: ", error);
     }
   },
 
@@ -453,6 +510,8 @@ const myStore = (set) => ({
         evaluations: [],
         projectName: "",
         projectId: "",
+        canvasScale: { x: 1.1, y: 1.1 },
+        isRescaled: false,
       });
     }
   },
@@ -468,6 +527,8 @@ const myStore = (set) => ({
       evaluations: [],
       projectName: "",
       projectId: "",
+      canvasScale: { x: 1.1, y: 1.1 },
+      isRescaled: false,
     });
   },
 

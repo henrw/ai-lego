@@ -26,22 +26,22 @@ export default function MessageBox({ commentId, name, time, profileImg, message 
                 </button>
                 {
                     dropdownState && (
-                        <div id="dropdownDots" className={`absolute right-0 z-30 bg-white divide-y divide-gray-100 rounded-lg shadow w-40 dark:bg-gray-700 dark:divide-gray-600`}>
-                            <ul className="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownMenuIconButton">
+                        <div id="dropdownDots" className={`absolute right-0 z-30 bg-white divide-y divide-gray-100 rounded-lg shadow w-min dark:bg-gray-700 dark:divide-gray-600`}>
+                            <ul className="text-sm text-gray-600" aria-labelledby="dropdownMenuIconButton">
                                 <li>
-                                    <button className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Reply</button>
+                                    <button className="block px-4 py-2 w-full rounded-t-lg hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Reply</button>
                                 </li>
                                 <li>
-                                    <button className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Forward</button>
+                                    <button className="block px-4 py-2 w-full hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Forward</button>
                                 </li>
                                 <li>
-                                    <button className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Copy</button>
+                                    <button className="block px-4 py-2 w-full hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Copy</button>
                                 </li>
                                 <li>
-                                    <button className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Report</button>
+                                    <button className="block px-4 py-2 w-full hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Report</button>
                                 </li>
                                 <li>
-                                    <button onClick={()=>{deleteComment(commentId);}} className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Delete</button>
+                                    <button onClick={()=>{deleteComment(commentId);}} className="block px-4 py-2 w-full rounded-b-lg hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Delete</button>
                                 </li>
                             </ul>
                         </div>

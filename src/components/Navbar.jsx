@@ -50,7 +50,7 @@ const Navbar = () => {
       <div className="links flex flex-row items-center gap-8">
         {user ? (
           <>
-            <Link
+            {/* <Link
               to="/about"
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
@@ -61,7 +61,7 @@ const Navbar = () => {
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
               Contact us
-            </Link>
+            </Link> */}
             <div className="relative">
               <button onClick={toggleDropdown} className="focus:outline-none">
                 {userDetails.profile_picture ? (
@@ -71,14 +71,15 @@ const Navbar = () => {
                     className="w-8 h-8 rounded-full"
                   />
                 ) : (
-                  <FaUserCircle size="2em" color="#A9A9A9" />
+                  <FaUserCircle size="3em" className="-my-5" color="#A9A9A9" />
                 )}
               </button>
               {dropdownVisible && (
                 <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-xl z-20">
                   <div className="px-4 py-2 flex flex-col items-center">
                     <img
-                      src={userDetails.profile_picture}
+                      // src={userDetails.profile_picture}
+                      src="/profile_pic.svg"
                       alt="Profile Large"
                       className="w-24 h-24 rounded-full"
                     />
@@ -102,16 +103,17 @@ const Navbar = () => {
                       View/edit document access
                     </button>
                   </div>
+                  <div className="flex flex-row justify-center text-lg text-white transition-colors duration-200">
+                    <button
+                      onClick={handleSignOut}
+                      className="bg-red-400 hover:bg-red-500 rounded-2 px-4 py-2 text-sm font-semibold shadow-md transition-all duration-200 ease-in-out transform hover:scale-105"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+
                 </div>
               )}
-            </div>
-            <div className="text-lg text-gray-700 hover:text-white transition-colors duration-200">
-              <button
-                onClick={handleSignOut}
-                className="bg-red-400 rounded-lg px-1"
-              >
-                Sign Out
-              </button>
             </div>
           </>
         ) : (
