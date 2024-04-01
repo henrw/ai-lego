@@ -3,7 +3,9 @@ module.exports = {
   content: ["./src/**/*.{js,jsx,ts,tsx}"],
   theme: {
     fontFamily: {
-      sans: ["Helvetica", "Arial", "sans-serif"],
+      'sans': ['ui-sans-serif', 'system-ui', ],
+      'serif': ['ui-serif', 'Georgia', ],
+      'mono': ['"Source Code Pro"', 'monospace'],
     },
     extend: {
       colors: {
@@ -17,7 +19,7 @@ module.exports = {
         task: "#FDF9DB",
         data: "#E4CB8E",
         model: "#E49675",
-        train: "#F0655B",
+        train: "#a7f3d0",
         test: "#7BC2DA",
         deploy: "#B3A0D9",
         feedback: "#ABC28B",

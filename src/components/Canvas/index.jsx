@@ -54,7 +54,7 @@ const Canvas = () => {
     pullProject(projectId);
   }, [pullProject, projectId]);
 
-  console.log("Canvas rendering", canvasScale);
+  // console.log("Canvas rendering");
 
   return (
     // <div className="flex flex-row ">
@@ -78,17 +78,19 @@ const Canvas = () => {
         <Xarrow
           className="arrow"
           path={linksPath}
-          start={ar.start}
+          headSize={4}
+          start={ar.start+"-right"}
           end={ar.end}
           startAnchor={"right"}
-          endAnchor={"left"}
+          // endAnchor={"left"}
           key={ar.start + "." + ar.end}
           labels={""}
+          zIndex={0}
           color="#9CAFB7"
         />
       ))}
 
-      <div className="flex flex-row fixed mt-4 left-0 mb-4 ml-4 flex flex-col">
+      <div className="flex flex-row fixed top-20 left-4">
         <input
           type="text"
           className="p-2 border-2"
