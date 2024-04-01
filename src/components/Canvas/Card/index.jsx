@@ -19,7 +19,7 @@ const ConnectPointsWrapper = ({ id, handler, dragRef, cardRef }) => {
     position: "absolute",
     top: "20px",
     right: "0%",
-    zIndex: 1001
+    zIndex: 1
   });
   const [beingDragged, setBeingDragged] = useState(false);
 
@@ -53,7 +53,7 @@ const ConnectPointsWrapper = ({ id, handler, dragRef, cardRef }) => {
             position: "absolute",
             top: "20px",
             right: "0%",
-            zIndex: 1001
+            zIndex: 1
           });
           setBeingDragged(false);
         }}
@@ -67,6 +67,7 @@ const ConnectPointsWrapper = ({ id, handler, dragRef, cardRef }) => {
           endAnchor={"left"}
           end={ref1}
           color="#9CAFB7"
+          zIndex={0}
         />
       ) : null}
     </React.Fragment>
@@ -182,7 +183,7 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
       }}
     >
       <div
-        className={`absolute text-sm flex flex-col justify-center w-60 bg-white rounded shadow`} // w-96 for fixed width
+        className={`absolute z-1 text-sm flex flex-col justify-center w-60 bg-white rounded shadow`} // w-96 for fixed width
         id={id}
         ref={cardRef}
         style={{ paddingBottom: "0" }}
@@ -239,7 +240,7 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
               <circle cx="20" cy="20" r="10" fill="black" />
             </svg>
           </div>
-          <div id={id + "-left"} className="absolute left-0 top-[20px] w-5 h-5">
+          <div id={id + "-left"} className="absolute left-0 h-6 top-[20px] transform z-0">
           </div>
           <textarea
             id={id+"-textarea"}
@@ -247,7 +248,8 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
             value={text}
             style={{ resize: "none", minHeight: '40px' }}
             onChange={(e) => handleTextChange(e.target.value, id)}
-            onClick={() => { setShowPrompt(!showPrompt); }}
+            onBlur={() => { setShowPrompt(false);}}
+            onFocus={() => { setShowPrompt(true); }}
             onDoubleClick={() => { }}
             placeholder="Describe this stage..."
           />
@@ -293,7 +295,7 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
             </div>
           )
           }
-          <button className={`flex justify-center rounded-lg h-5`}
+          <button className={`flex justify-center rounded-b-lg bg-gray-100 h-5`}
             onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
             <svg width="40" height="20" viewBox="0 0 134 39" fill="none" xmlns="http://www.w3.org/2000/svg">
               {showComments && <path d="M133.5 19.5L67 0.5L0.5 19.5V38.5L67 19.5L133.5 38.5V19.5Z" fill="#D2D2D2" />}

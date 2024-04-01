@@ -19,7 +19,7 @@ export default function MiniMap() {
     window.addEventListener('scroll', handleScroll);
 
     return (
-        <div className="fixed bottom-2 left-1/2 w-[10%] h-[10%] bg-gray-100 transform -translate-x-1/2"
+        <div className="fixed z-10 bottom-2 left-1/2 w-[10%] h-[10%] bg-gray-100 transform -translate-x-1/2"
             onMouseDown={(e) => {
                 window.scrollTo(Math.max(((e.clientX - window.innerWidth * 0.45) / (window.innerWidth * 0.1)) * window.innerWidth, 0), Math.max(((e.clientY - window.innerHeight * 0.9 + 8) / (window.innerHeight * 0.1)) * window.innerHeight, 0));
             }}

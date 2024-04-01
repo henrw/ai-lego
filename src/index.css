@@ -84,6 +84,7 @@ code {
     /* Adjust height as needed */
     bottom: 0;
     right: 0;
+    z-index: 30;
     /* Align to bottom */
     opacity: 1;
     /* Show content */

@@ -56,7 +56,7 @@ function CollaboratorModal({ isOpen, onClose }) {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-20">
             <div className="relative top-20 mx-auto p-5 border w-[90%] md:w-[500px] shadow-lg rounded-md bg-white">
                 <div className="flex justify-between items-center">
                     <h3 className="text-lg leading-6 font-medium text-gray-900">

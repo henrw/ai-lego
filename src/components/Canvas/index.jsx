@@ -80,9 +80,9 @@ const Canvas = () => {
           path={linksPath}
           headSize={4}
           start={ar.start+"-right"}
-          end={ar.end}
+          end={ar.end+"-left"}
           startAnchor={"right"}
-          // endAnchor={"left"}
+          endAnchor={"left"}
           key={ar.start + "." + ar.end}
           labels={""}
           zIndex={0}
@@ -90,7 +90,7 @@ const Canvas = () => {
         />
       ))}
 
-      <div className="flex flex-row fixed top-20 left-4">
+      <div className="flex flex-row fixed top-20 left-4 z-10">
         <input
           type="text"
           className="p-2 border-2"
@@ -113,7 +113,7 @@ const Canvas = () => {
       <MiniMap />
 
 
-      <div className="fixed bottom-0 left-0 mb-4 ml-4">
+      <div className="fixed bottom-0 left-0 mb-4 ml-4 z-10">
         <div className="flex flex-row">
           <div className="flex flex-col">
             <p className="font-bold text-lg">Stages:</p>
@@ -147,7 +147,7 @@ const Canvas = () => {
             }
           </div>
           <div
-            className={`h-min w-[300px] rounded-lg bg-black text-white text-center fixed left-[100px] z-[1001] transition-opacity duration-300 ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
+            className={`h-min w-[300px] rounded-lg bg-black text-white text-center fixed left-[110px] z-[1001] transition-opacity duration-300 ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
             style={{
               top: `${hoverY}px`
             }}>

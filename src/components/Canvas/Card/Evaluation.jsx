@@ -7,7 +7,7 @@ export default function EvaluationBox({ evaluationData }) {
 
     const [dropdownState, setDropdownState] = useState(false);
     return (
-        <div className="flex items-start mb-1 ">
+        <div className="flex items-start mb-1">
             <img className="w-8 h-8 rounded-full" src="/profile-pic.png" alt="Jese image" />
             <div className="flex flex-col w-full leading-1.5 ml-1">
                 <div className="flex items-left space-x-2 text-xs">

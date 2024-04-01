@@ -13,7 +13,7 @@ export default function MessageBox({ commentId, name, time, profileImg, message 
                     {/* <span className="font-semibold">{name}</span> */}
                     <span className="font-normal text-gray-500">{time}</span>
                 </div>
-                <div className="relative text-sm font-normal bg-gray-100 rounded p-2">
+                <div className="relative text-sm font-normal bg-white rounded p-2">
                     <div>{message}</div>
                     <div className="absolute top-0 right-0">
                         <button
@@ -26,7 +26,7 @@ export default function MessageBox({ commentId, name, time, profileImg, message 
                         </button>
                         {
                             dropdownState && (
-                                <div id="dropdownDots" className={`absolute right-0 z-30 bg-white divide-y divide-gray-100 rounded-lg shadow w-min dark:bg-gray-700 dark:divide-gray-600`}>
+                                <div id="dropdownDots" className={`fixed right-0 z-30 bg-white divide-y divide-gray-100 rounded-lg shadow w-min dark:bg-gray-700 dark:divide-gray-600`}>
                                     <ul className="text-sm text-gray-600" aria-labelledby="dropdownMenuIconButton">
                                         <li>
                                             <button className="block px-4 py-2 w-full rounded-t-lg hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Reply</button>
