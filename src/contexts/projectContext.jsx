@@ -230,6 +230,8 @@ const myStore = (set) => ({
         getDoc(doc(db, "cards", cardId)).then(cardDocSnap => cardDocSnap.data())
       );
       cards = await Promise.all(cardFetchPromises);
+      cards.sort((a, b) => b.createdAt - a.createdAt);
+
 
       for (const card of cards) {
         let comments = [];
@@ -298,7 +300,7 @@ const myStore = (set) => ({
     }
   },
 
-  addEvaluation: async (username, report) => {
+  addEvaluation: async (username, selectedCardIds, report) => {
     const { projectId } = useMyStore.getState();
     if (projectId == null) {
       throw new Error("null projectId");
@@ -307,7 +309,7 @@ const myStore = (set) => ({
     const newEvaluation = {
       ...report,
       projectId: projectId,
-      cardIds: [],
+      cardIds: [...selectedCardIds],
       by: username,
       uid: "", // Temporarily empty, will be filled with doc I
       lastUpdatedTime: "Now"
@@ -359,7 +361,7 @@ const myStore = (set) => ({
         store.cards.push(newCard);
       }));
 
-      await updateDoc(cardDocRef, { uid: cardDocRef.id }); // Update the card with its UID
+      await updateDoc(cardDocRef, { uid: cardDocRef.id, createdAt: serverTimestamp() }); // Update the card with its UID
 
       await updateDoc(doc(db, "projects", projectId), {
         cards: arrayUnion(cardDocRef.id),
@@ -432,13 +434,18 @@ const myStore = (set) => ({
   addLink: async (refs) => {
     if (refs.start === refs.end)
       return;
+
+    let exist = false;
     set(
       produce((store) => {
-        if (!store.links.includes(refs)) {
+        if (!store.links.some(link => (link.start === refs.start && link.end === refs.end))) {
           store.links.push(refs);
-        }
+          exist = true;
+      }
       })
     );
+    
+    if (exist) return; // Prevent duplicates
 
     const { projectId } = useMyStore.getState();
 

@@ -12,7 +12,7 @@ import MessageBox from "./Message";
 import EvaluationBox from "./Evaluation";
 import { useUserAuth } from "../../../authentication/UserAuthContext";
 
-const ConnectPointsWrapper = ({ id, handler, dragRef, cardRef }) => {
+const ConnectPointsWrapper = ({ id, dragRef, cardRef }) => {
   const ref1 = useRef();
 
   const [position, setPosition] = useState({
@@ -62,7 +62,7 @@ const ConnectPointsWrapper = ({ id, handler, dragRef, cardRef }) => {
         <Xarrow
           path="straight"
           headSize={4}
-          start={id+"-right"}
+          start={id + "-right"}
           startAnchor={"right"}
           endAnchor={"left"}
           end={ref1}
@@ -87,7 +87,12 @@ const getBgColorClassFromId = (stage) => {
   return bgColorClass;
 };
 
-export default function Card({ id, stage, handleDelete, text, comments, handler }) {
+export default function Card({ id, stage, number, handleDelete, text, comments, changeSelectedCardIds, selectedCardIds }) {
+
+  useEffect(() => {
+    const textArea = document.getElementById(id + "-textarea");
+    textArea.style.height = textArea.scrollHeight + 'px';
+  })
 
   const { user } = useUserAuth();
   const borderColorClass = getBorderColorClassFromId(id);
@@ -97,7 +102,7 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
     shallow
   );
   const evaluationData = useMyStore(
-    (store) => store.evaluations.filter(() => (true)), // TODO filter the card-matched evaluations only
+    (store) => store.evaluations.filter((evaluation) => (evaluation.cardIds.includes(id))), // TODO filter the card-matched evaluations only
     shallow
   );
   // Extract the stage description from cardData
@@ -123,15 +128,9 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
 
   const refreshLinks = useMyStore((store) => store.refreshLinks); // Add this function inside the Card component before the return statement
 
-  const handleTextChange = (newText, cardId) => {
-    // Call a store action to update the text for this specific card
-    useMyStore.getState().setCardDescription(cardId, newText);
-
-    const textarea = document.getElementById(cardId+"-textarea");
-    if (textarea) {
-        textarea.style.height = 'auto'; // Reset height to allow shrinking
-        textarea.style.height = textarea.scrollHeight + 'px'; // Set to scroll height
-    }
+  const handleTextChange = (textArea, cardId) => {
+    useMyStore.getState().setCardDescription(cardId, textArea.value);
+    textArea.style.height = textArea.scrollHeight + 'px';
   };
 
   // const handleReplyToComment = (parentId, replyText) => {
@@ -165,6 +164,7 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
   // Add a Tailwind CSS class for fixed width and flexible height
   const cardClass = "relative bg-gray-200 rounded shadow p-2 w-60";
 
+  const [selected, setSelected] = useState(false);
 
   return (
     <Draggable
@@ -183,10 +183,11 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
       }}
     >
       <div
-        className={`absolute z-1 text-sm flex flex-col justify-center w-60 bg-white rounded shadow`} // w-96 for fixed width
+        className={`absolute z-1 text-sm flex flex-col justify-center w-60 bg-white rounded shadow ${selectedCardIds.includes(id) ? "outline outline-2 outline-blue-500" : ""}`} // w-96 for fixed width
         id={id}
         ref={cardRef}
         style={{ paddingBottom: "0" }}
+        onClick={() => { changeSelectedCardIds(id); setSelected(!selected) }}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           if (e.dataTransfer.getData("arrow") != id) {
@@ -196,21 +197,34 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
         }}
       >
         <div className="grow-1">
-          <div className={`flex flex-row justify-between items-center ${bgColorClass} rounded-t-lg px-2 py-2 text-lg font-mono font-bold`}>
+          <div className={`flex flex-row justify-between items-center ${bgColorClass} rounded-t px-2 py-2 text-lg font-mono font-bold`}>
             <div className="flex flex-row">
-              <div onMouseOver={() => setShowPrompt(true)} onMouseOut={() => setShowPrompt(false)}>{stageName}</div>
+              <div onMouseOver={() => setShowPrompt(true)} onMouseOut={() => setShowPrompt(false)}>{stageName}#{number}</div>
               {
-                (evaluationData.length + comments.length) !== 0 && (
+                (comments.length) !== 0 && (
                   <button className="ml-1 text-white"
                     onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
-                    <svg className="w-5 h-5" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <svg className="w-7 h-7" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <rect x="5%" y="5%" width="26" height="21" fill="#fcba03"></rect>
-                      <path d="M27 0H3C1.35 0 0 1.35 0 3V30L6 24H27C28.65 24 30 22.65 30 21V3C30 1.35 28.65 0 27 0ZM27 21H4.8L3 22.8V3H27V21Z" fill="#fcba03" stroke="" stroke-width="1" />
-                      <text x="50%" y="40%" font-size="20" text-anchor="middle" fill="black" dominant-baseline="central">{evaluationData.length + comments.length}</text>
+                      <path d="M27 0H3C1.35 0 0 1.35 0 3V30L6 24H27C28.65 24 30 22.65 30 21V3C30 1.35 28.65 0 27 0ZM27 21H4.8L3 22.8V3H27V21Z" fill="#fcba03" stroke="" strokeWidth="1" />
+                      <text x="50%" y="48%" className="text-sm" textAnchor="middle" fill="black" dominantBaseline="central">{comments.length}</text>
                     </svg>
                   </button>
                 )
               }
+              {
+                (evaluationData.length) !== 0 && (
+                  <button className="ml-1 text-white"
+                    onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
+                    <svg className="w-7 h-7" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                      <polygon points="15,0 28,24 2,24" fill="white" stroke="#ef4444" strokeWidth="3" />
+                      <text x="50%" y="50%" className="text-sm" textAnchor="middle" fill="black" dominantBaseline="central">{evaluationData.length}</text>
+                    </svg>
+                  </button>
+                )
+              }
+
+
             </div>
             <button
               onClick={() => handleDelete(id)}
@@ -233,7 +247,7 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
         </div>
 
         <div className="relative">
-          <ConnectPointsWrapper id={id} {...{ handler, dragRef, cardRef }} />
+          <ConnectPointsWrapper {...{ id, dragRef, cardRef }} />
           <div id={id + "-right"} className="absolute right-0 top-[20px] transform translate-x-[50%] z-0">
             <svg className="w-5 h-5" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="20" cy="20" r="20" fill="white" />
@@ -243,12 +257,13 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
           <div id={id + "-left"} className="absolute left-0 h-6 top-[20px] transform z-0">
           </div>
           <textarea
-            id={id+"-textarea"}
+            id={id + "-textarea"}
             className="p-2 w-60 outline-none text-md"
             value={text}
-            style={{ resize: "none", minHeight: '40px' }}
-            onChange={(e) => handleTextChange(e.target.value, id)}
-            onBlur={() => { setShowPrompt(false);}}
+            style={{ resize: "none", minHeight: '40px', height: 'auto' }}
+            onClick={(event) => { event.stopPropagation(); }}
+            onChange={(e) => handleTextChange(e.target, id)}
+            onBlur={() => { setShowPrompt(false); }}
             onFocus={() => { setShowPrompt(true); }}
             onDoubleClick={() => { }}
             placeholder="Describe this stage..."
@@ -295,8 +310,8 @@ export default function Card({ id, stage, handleDelete, text, comments, handler 
             </div>
           )
           }
-          <button className={`flex justify-center rounded-b-lg bg-gray-100 h-5`}
-            onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
+          <button className={`flex justify-center rounded-b bg-gray-100 h-5`}
+            onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
             <svg width="40" height="20" viewBox="0 0 134 39" fill="none" xmlns="http://www.w3.org/2000/svg">
               {showComments && <path d="M133.5 19.5L67 0.5L0.5 19.5V38.5L67 19.5L133.5 38.5V19.5Z" fill="#D2D2D2" />}
               {!showComments && <path d="M0.5 19.5L67 38.5L133.5 19.5V0.5L67 19.5L0.5 0.5L0.5 19.5Z" fill="#D2D2D2" />}

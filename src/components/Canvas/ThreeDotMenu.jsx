@@ -22,6 +22,7 @@ function ThreeDotMenu({ deleteProject, projectId }) {
                         <li><button
                             className='rounded-b-2 button-hover' onClick={(event) => {
                                 event.stopPropagation();
+                                toggleMenu(event);
                                 deleteProject(projectId);
                             }}>Delete</button></li>
                     </ul>

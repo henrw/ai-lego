@@ -1,8 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import { useUserAuth } from "../../authentication/UserAuthContext";
 import useMyStore from "../../contexts/projectContext";
+import { colorClasses } from "../../contexts/projectContext";
 
-export default function EvaluationPanel() {
+export default function EvaluationPanel({ selectedCardIds, cardsData, cardId2number }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const { user } = useUserAuth();
 
@@ -14,9 +15,17 @@ export default function EvaluationPanel() {
     const [openText, setOpenText] = useState("");
     const addEvaluation = useMyStore((store) => store.addEvaluation);
 
+    const resetTextInput = () => {
+        setProblemText("");
+        setValueText("");
+        setStakeholderText("");
+        setImpactText("");
+        setOpenText("");
+    }
+
     return (
         <>
-            <div className={`w-96 expandable-panel ${isExpanded ? 'expanded' : 'collapsed'}`}>
+            <div className={`w-96 text-sm expandable-panel ${isExpanded ? 'expanded' : 'collapsed'}`}>
                 {/* Panel content goes here - it will show when expanded */}
                 {isExpanded && (
                     <>
@@ -26,14 +35,33 @@ export default function EvaluationPanel() {
                                 onClick={() => togglePanel()}
                                 className="text p-1 ml-auto"
                             >
-                                ❌
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
                             </button>
                         </div>
-                        {/* <div className="mb-3">
-                        <p>Related Stage(s):</p>
-                    </div> */}
                         <div className="mb-3">
-                            <p>Please briefly describe the issue:</p>
+                            <p>Related Stage(s):</p>
+                            {
+                                selectedCardIds.length !== 0 && (
+                                    <div className="flex flex-row gap-1">
+                                        {
+                                            selectedCardIds.map((cardId) => {
+                                                const stage = cardsData.filter(cardData => cardData.uid === cardId)[0].stage;
+                                                return (
+                                                    <div className={`rounded-full p-1 bg-${colorClasses[stage]}`}>
+                                                        {stage}#{cardId2number[cardId]}
+                                                    </div>
+                                                );
+                                            }
+                                            )
+                                        }
+                                    </div>
+                                )
+                            }
+                        </div>
+                        <div className="mb-3">
+                            <p>Briefly describe the issue:</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={problemText}
@@ -73,7 +101,7 @@ export default function EvaluationPanel() {
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName, { problem: problemText, value: valueText, stakeholder: stakeholderText, impact: impactText, open: openText }) }}>
+                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { problem: problemText, value: valueText, stakeholder: stakeholderText, impact: impactText, open: openText }); resetTextInput(); }}>
                             Submit
                         </button>
                     </>

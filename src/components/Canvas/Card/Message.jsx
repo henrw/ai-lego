@@ -13,7 +13,7 @@ export default function MessageBox({ commentId, name, time, profileImg, message 
                     {/* <span className="font-semibold">{name}</span> */}
                     <span className="font-normal text-gray-500">{time}</span>
                 </div>
-                <div className="relative text-sm font-normal bg-white rounded p-2">
+                <div className="relative text-sm font-normal bg-gray-100 rounded p-2">
                     <div>{message}</div>
                     <div className="absolute top-0 right-0">
                         <button

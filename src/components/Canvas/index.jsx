@@ -26,6 +26,8 @@ const Canvas = () => {
     return bgColorClass;
   };
 
+  const [selectedCardIds, setSelectedCardIds] = useState([]);
+
   const { projectId } = useParams();
   const linksPath = "smooth";
 
@@ -42,6 +44,7 @@ const Canvas = () => {
   const pullProject = useMyStore((store) => store.pullProject);
   const cleanStore = useMyStore((store) => store.cleanStore);
   const setProjectName = useMyStore((store) => store.setProjectName);
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
 
   // Add a function to handle delete action
   const handleDelete = (cardId) => {
@@ -49,30 +52,84 @@ const Canvas = () => {
     useMyStore.getState().deleteCardAndLinks(cardId);
   };
 
+  let stage2number = {};
+  let cardId2number = {}
+
   useEffect(() => {
     cleanStore(projectId);
     pullProject(projectId);
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Shift') {
+        setIsShiftPressed(true);
+      }
+    };
+
+    const handleKeyUp = (event) => {
+      if (event.key === 'Shift') {
+        setIsShiftPressed(false);
+
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
   }, [pullProject, projectId]);
 
-  // console.log("Canvas rendering");
+
+  const changeSelectedCardIds = (cardId) => {
+    setSelectedCardIds(currentSelectedIds => (
+      currentSelectedIds.includes(cardId)
+        ? (
+          isShiftPressed
+          ? currentSelectedIds.filter(item => item !== cardId)
+          : []
+        )
+        : (
+          isShiftPressed
+          ? [...currentSelectedIds, cardId]
+          : [cardId]
+        )
+    )
+      
+    );
+  };
 
   return (
     // <div className="flex flex-row ">
     <div style={{width: `${canvasScale.x * 100}vw`, height: `${canvasScale.y * 100}vh`, paddingTop: '4rem', position: 'relative' }} className="sketchbook-background">
 
-      {cardsData.map((card) => (
-        <Card
+      {cardsData.map((card) => {
+        if (card.stage in stage2number)
+        {
+          stage2number[card.stage] += 1;
+          cardId2number[card.uid] = stage2number[card.stage];
+        }
+        else
+        {
+          stage2number[card.stage] = 0;
+          cardId2number[card.uid] = 0;
+        }
+
+        return (
+          <Card
           id={card.uid}
           key={card.uid}
+          number={stage2number[card.stage]}
           stage={card.stage}
-          //   handleDelete={() => {}}
           comments={card.comments}
           handleDelete={handleDelete}
           text={card.description}
-          {...{ handler: "right" }}
-          cardId={"" + card.id}
+          changeSelectedCardIds={changeSelectedCardIds}
+          selectedCardIds={selectedCardIds}
         />
-      ))}
+        )
+      })}
 
       {links.map((ar, idx) => (
         <Xarrow
@@ -108,8 +165,8 @@ const Canvas = () => {
 
       <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
 
-      <EvaluationPanel />
-
+      <EvaluationPanel selectedCardIds={[...selectedCardIds]} cardsData={cardsData} cardId2number={cardId2number}/>
+        {/* Shallow copy */}
       <MiniMap />
 
 
