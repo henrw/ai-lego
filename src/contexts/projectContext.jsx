@@ -438,27 +438,23 @@ const myStore = (set) => ({
     if (refs.start === refs.end)
       return;
 
-    let exist = false;
+    let exist = true;
     set(
       produce((store) => {
         if (!store.links.some(link => (link.start === refs.start && link.end === refs.end))) {
           store.links.push(refs);
-          exist = true;
+          exist = false;
       }
       })
     );
     
     if (exist) return; // Prevent duplicates
 
-    const { projectId } = useMyStore.getState();
-
+    const { projectId, links } = useMyStore.getState();
     if (projectId) {
       try {
         const projectDocRef = doc(db, "projects", projectId);
-        const projectDocSnap = await getDoc(projectDocRef);
-        const currentLinks = projectDocSnap.data().links || [];
-        const updatedLinks = [...currentLinks, refs];
-        await updateDoc(projectDocRef, { links: updatedLinks });
+        await updateDoc(projectDocRef, { links: links });
       } catch (error) {
         console.error("Error updating arrows in Firestore:", error);
       }
