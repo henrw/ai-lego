@@ -340,8 +340,11 @@ const myStore = (set) => ({
       throw new Error("null projectId");
     }
 
-    const rightmostX = cards.reduce((max, card) => Math.max(card.position.x, max), 0);
-    const newPosition = { x: rightmostX + 170, y: 0 };
+    const x = cards.reduce((max, card) => Math.max(card.position.x, max), 0) + 300;
+    const y = cards.length > 0 ? cards.at(-1).position.y: 50;
+    const newPosition = { x: x, y: y };
+
+
 
     const newCard = {
       projectId: projectId,

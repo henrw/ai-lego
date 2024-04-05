@@ -35,6 +35,7 @@ const Canvas = () => {
   const [hoverY, setHoverY] = useState(0);
 
   const cardsData = useMyStore((store) => store.cards);
+  const evaluations = useMyStore((store) => store.evaluations);
   const projectName = useMyStore((store) => store.projectName);
   const links = useMyStore((store) => store.links);
 
@@ -165,7 +166,7 @@ const Canvas = () => {
 
       <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
 
-      <EvaluationPanel selectedCardIds={[...selectedCardIds]} cardsData={cardsData} cardId2number={cardId2number}/>
+      <EvaluationPanel selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number}/>
         {/* Shallow copy */}
       <MiniMap />
 

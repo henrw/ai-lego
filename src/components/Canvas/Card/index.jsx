@@ -183,7 +183,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
       }}
     >
       <div
-        className={`absolute z-1 text-sm flex flex-col justify-center w-60 bg-white rounded shadow ${selectedCardIds.includes(id) ? "outline outline-2 outline-blue-500" : ""}`} // w-96 for fixed width
+        className={`absolute z-1 text-sm flex flex-col justify-center w-60 bg-white rounded shadow ${selectedCardIds.includes(id) ? "outline outline-4 outline-blue-400" : ""}`} // w-96 for fixed width
         id={id}
         ref={cardRef}
         style={{ paddingBottom: "0" }}
