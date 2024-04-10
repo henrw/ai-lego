@@ -13,6 +13,17 @@ function CollaboratorModal({ isOpen, onClose }) {
         // Add your logic to send the email or manage collaborators here
     };
 
+    const url = `${window.location.href}?usp=sharing`;
+
+    const handleCopyClick = async () => {
+        try {
+            await navigator.clipboard.writeText(url);
+            // alert('URL copied to clipboard!');
+        } catch (err) {
+            console.error('Failed to copy: ', err);
+        }
+    };
+
     const addCollaborator = async (email) => {
         if (projectId) {
             const usersRef = collection(db, "users");
@@ -100,6 +111,10 @@ function CollaboratorModal({ isOpen, onClose }) {
                         )
                     }
                 </form>
+                <div className='mt-4 flex flex-row'>
+                    <input type="text w-[90%] p-2 border" value={url} readOnly />
+                    <button onClick={handleCopyClick} className='ml-2 bg-blue-500 p-1 rounded text-white text-sm'>Copy</button>
+                </div>
             </div>
         </div>
     );

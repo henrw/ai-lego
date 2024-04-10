@@ -4,14 +4,18 @@ import Column from "./Column";
 import { useState } from "react";
 import useMyStore, { prompts, colorClasses } from "../../contexts/projectContext";
 import Xarrow from "react-xarrows";
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import EvaluationPanel from "./Evaluation";
 import CollaboratorModal from "./CollaboratorModal";
 import MiniMap from "./MiniMap";
+import { useUserAuth } from "../../authentication/UserAuthContext";
 
+import { db } from "../../firebase"; // Ensure you have this import
+import { doc, getDoc, updateDoc, addDoc, deleteDoc, collection, arrayUnion, arrayRemove, query, where, getDocs, serverTimestamp } from "firebase/firestore"; // Import Firestore document update functions
 
 const Canvas = () => {
 
+  const { user, loading } = useUserAuth();
   // Collaborator modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const openModal = () => {
@@ -29,6 +33,11 @@ const Canvas = () => {
   const [selectedCardIds, setSelectedCardIds] = useState([]);
 
   const { projectId } = useParams();
+  const location = useLocation();
+
+  const queryParams = new URLSearchParams(location.search);
+
+  const usp = queryParams.get('usp');
   const linksPath = "smooth";
 
   const [hovered, setHovered] = useState("");
@@ -56,10 +65,35 @@ const Canvas = () => {
   let stage2number = {};
   let cardId2number = {}
 
+
+  const addCollaborator = async () => {
+    console.log(user?.uid);
+    try {
+        const userId = user?.uid;
+        const projectRef = doc(db, "projects", projectId);
+        try {
+            await updateDoc(projectRef, {
+                userIds: arrayUnion(userId)
+            });
+            const userDocRef = doc(db, "users", userId);
+            await updateDoc(userDocRef, {
+                projectIds: arrayUnion(projectId)
+            });
+            console.log("User ID added to project.");
+        } catch (error) {
+            console.error("Error adding user ID to project: ", error);
+        }
+
+    } catch (error) {
+        console.error("Error getting documents: ", error);
+    }
+};
+
   useEffect(() => {
     cleanStore(projectId);
     pullProject(projectId);
-
+    
+    if (usp == "sharing") addCollaborator();
     const handleKeyDown = (event) => {
       if (event.key === 'Shift') {
         setIsShiftPressed(true);
@@ -100,6 +134,8 @@ const Canvas = () => {
       
     );
   };
+
+  if (loading) return <div></div>;
 
   return (
     // <div className="flex flex-row ">

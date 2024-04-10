@@ -13,6 +13,7 @@ const userAuthContext = createContext();
 
 export function UserAuthContextProvider({ children }) {
   const [user, setUser] = useState({});
+  const [loading, setLoading] = useState(true);
 
   function logIn(email, password) {
     return signInWithEmailAndPassword(auth, email, password);
@@ -32,6 +33,7 @@ export function UserAuthContextProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (currentuser) => {
       console.log("Auth", currentuser);
       setUser(currentuser);
+      setLoading(false);
     });
 
     return () => {
@@ -39,9 +41,12 @@ export function UserAuthContextProvider({ children }) {
     };
   }, []);
 
+  if (loading) {
+      return <div>Loading...</div>; // Or any loading indicator you prefer
+  }
   return (
     <userAuthContext.Provider
-      value={{ user, logIn, signUp, logOut, googleSignIn }}
+      value={{ user, loading, logIn, signUp, logOut, googleSignIn }}
     >
       {children}
     </userAuthContext.Provider>
