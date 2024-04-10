@@ -72,13 +72,13 @@ const Login = () => {
 
         <hr className="my-4" />
 
-        <div className="flex justify-center">
+        {/* <div className="flex justify-center">
           <GoogleButton
             className="g-btn"
             type="dark"
             onClick={handleGoogleSignIn}
           />
-        </div>
+        </div> */}
 
         <div className="text-center mt-3">
           Don't have an account?{" "}
