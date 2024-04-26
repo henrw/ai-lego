@@ -80,7 +80,9 @@ const Home = () => {
             const lastUpdatedTime = doc.data().lastUpdatedTime.toDate().toLocaleDateString('en-US');
             const lastUpdatedTimeRaw = doc.data().lastUpdatedTime;
             const lastUpdatedBy = doc.data().lastUpdatedBy;
-            projects.push({ uid: doc.data().uid, name: name, lastUpdatedTime: lastUpdatedTime, lastUpdatedTimeRaw: lastUpdatedTimeRaw, lastUpdatedBy: lastUpdatedBy });
+            const snapshotUrl = doc.data().snapshotUrl;
+
+            projects.push({ uid: doc.data().uid, name: name, lastUpdatedTime: lastUpdatedTime, lastUpdatedTimeRaw: lastUpdatedTimeRaw, lastUpdatedBy: lastUpdatedBy, snapshotUrl: snapshotUrl || "/project-thumbnail-example.png" });
           });
           // Sorting the projects in the reverse chronological order
           projects.sort((a, b) => b.lastUpdatedTimeRaw - a.lastUpdatedTimeRaw);
@@ -237,9 +239,16 @@ const Home = () => {
     setProjectsInfo(newProjectsInfo);
     try {
       await deleteDoc(doc(db, "projects", projectId));
-
       await updateDoc(doc(db, "users", user.uid), {
         projectIds: arrayRemove(projectId)
+      });
+
+      await deleteObject(ref(storage, `project_snapshots/${projectId}`))
+      .then(() => {
+          console.log('File successfully deleted!');
+      })
+      .catch((error) => {
+          console.error('Error removing file: ', error);
       });
   
     } catch (error) {
@@ -284,7 +293,7 @@ const Home = () => {
             <div className="font-bold text-2xl">
               Projects
             </div>
-            <button className="ml-auto rounded p-2 text-white" style={{ backgroundColor: "#b063c5" }}
+            <button className="ml-auto text-xl rounded p-2 text-white" style={{ backgroundColor: "#b063c5" }}
               onClick={createProject}>
               + New Project
             </button>
@@ -297,7 +306,7 @@ const Home = () => {
               <Col md={3} key={index} className="mb-4" onClick={() => { navigate(`/project/${item.uid}`) }} style={{ cursor: 'pointer' }}>
                 <Card>
                   <Card.Body style={{ ...cardStyle }}>
-                    <Card.Img variant="top" src="/project-thumbnail-example.png" />
+                    <Card.Img variant="top" className="h-[150px]" src={item.snapshotUrl} />
                     <Card.Title>{item.name}</Card.Title>
                     <div className="flex flex-row items-center justify-between">
                       <div>Last Updated: {item.lastUpdatedTime}</div>

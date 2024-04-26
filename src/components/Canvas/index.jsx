@@ -9,8 +9,11 @@ import EvaluationPanel from "./Evaluation";
 import CollaboratorModal from "./CollaboratorModal";
 import MiniMap from "./MiniMap";
 import { useUserAuth } from "../../authentication/UserAuthContext";
+import html2canvas from 'html2canvas';
 
-import { db } from "../../firebase"; // Ensure you have this import
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
+import { db, storage } from "../../firebase"; // Ensure you have this import
 import { doc, getDoc, updateDoc, addDoc, deleteDoc, collection, arrayUnion, arrayRemove, query, where, getDocs, serverTimestamp } from "firebase/firestore"; // Import Firestore document update functions
 
 const Canvas = () => {
@@ -69,30 +72,30 @@ const Canvas = () => {
   const addCollaborator = async () => {
     console.log(user?.uid);
     try {
-        const userId = user?.uid;
-        const projectRef = doc(db, "projects", projectId);
-        try {
-            await updateDoc(projectRef, {
-                userIds: arrayUnion(userId)
-            });
-            const userDocRef = doc(db, "users", userId);
-            await updateDoc(userDocRef, {
-                projectIds: arrayUnion(projectId)
-            });
-            console.log("User ID added to project.");
-        } catch (error) {
-            console.error("Error adding user ID to project: ", error);
-        }
+      const userId = user?.uid;
+      const projectRef = doc(db, "projects", projectId);
+      try {
+        await updateDoc(projectRef, {
+          userIds: arrayUnion(userId)
+        });
+        const userDocRef = doc(db, "users", userId);
+        await updateDoc(userDocRef, {
+          projectIds: arrayUnion(projectId)
+        });
+        console.log("User ID added to project.");
+      } catch (error) {
+        console.error("Error adding user ID to project: ", error);
+      }
 
     } catch (error) {
-        console.error("Error getting documents: ", error);
+      console.error("Error getting documents: ", error);
     }
-};
+  };
 
   useEffect(() => {
     cleanStore(projectId);
     pullProject(projectId);
-    
+
     if (usp == "sharing") addCollaborator();
     const handleKeyDown = (event) => {
       if (event.key === 'Shift') {
@@ -122,68 +125,119 @@ const Canvas = () => {
       currentSelectedIds.includes(cardId)
         ? (
           isShiftPressed
-          ? currentSelectedIds.filter(item => item !== cardId)
-          : []
+            ? currentSelectedIds.filter(item => item !== cardId)
+            : []
         )
         : (
           isShiftPressed
-          ? [...currentSelectedIds, cardId]
-          : [cardId]
+            ? [...currentSelectedIds, cardId]
+            : [cardId]
         )
     )
-      
+
     );
   };
+
+  function captureElement() {
+    const element = document.getElementById("canvas"); // replace 'elementId' with your actual element ID
+    return html2canvas(element).then(canvas => {
+      return canvas.toDataURL('image/png');
+    });
+
+  }
+
+  async function saveImageToFirestore(imageDataURL) {
+    const blob = dataURLtoBlob(imageDataURL);
+    const downloadUrl = await uploadImageToStorage(blob, `project_snapshots/${projectId}.png`); // _${Date.now() Upload the image to Firebase Storage
+
+    await updateDoc(doc(db, "projects", projectId), {
+      snapshotUrl: downloadUrl,
+    })
+      .then(() => console.log("Document successfully written!"))
+      .catch(error => console.error("Error writing document: ", error));
+  }
+
+  function saveSnapshot() {
+    captureElement().then(imageDataURL => {
+      saveImageToFirestore(imageDataURL);
+    })
+  }
+
+  function dataURLtoBlob(dataurl) {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)[1];
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  }
+
+  const uploadImageToStorage = (fileBlob, path) => {
+    const storageRef = ref(storage, path);
+    return uploadBytes(storageRef, fileBlob)
+      .then((snapshot) => getDownloadURL(snapshot.ref))
+      .then((downloadURL) => {
+        console.log("File available at", downloadURL);
+        return downloadURL; // Return the URL to use it for saving in Firestore or other needs
+      });
+  };
+  useEffect(()=>{
+    if (cardsData.length !== 0){
+      saveSnapshot();
+    }
+  }, [cardsData]);
 
   if (loading) return <div></div>;
 
   return (
-    // <div className="flex flex-row ">
-    <div style={{width: `${canvasScale.x * 100}vw`, height: `${canvasScale.y * 100}vh`, paddingTop: '4rem', position: 'relative' }} className="sketchbook-background">
+    <>
+      {/* // <div className="flex flex-row "> */}
+      <div id="canvas" style={{ width: `${canvasScale.x * 100}vw`, height: `${canvasScale.y * 100}vh`, paddingTop: '4rem', position: 'relative' }} className="sketchbook-background">
 
-      {cardsData.map((card) => {
-        if (card.stage in stage2number)
-        {
-          stage2number[card.stage] += 1;
-          cardId2number[card.uid] = stage2number[card.stage];
-        }
-        else
-        {
-          stage2number[card.stage] = 0;
-          cardId2number[card.uid] = 0;
-        }
+        {cardsData.map((card) => {
+          if (card.stage in stage2number) {
+            stage2number[card.stage] += 1;
+            cardId2number[card.uid] = stage2number[card.stage];
+          }
+          else {
+            stage2number[card.stage] = 0;
+            cardId2number[card.uid] = 0;
+          }
 
-        return (
-          <Card
-          id={card.uid}
-          key={card.uid}
-          number={stage2number[card.stage]}
-          stage={card.stage}
-          comments={card.comments}
-          handleDelete={handleDelete}
-          text={card.description}
-          changeSelectedCardIds={changeSelectedCardIds}
-          selectedCardIds={selectedCardIds}
-        />
-        )
-      })}
+          return (
+            <Card
+              id={card.uid}
+              key={card.uid}
+              number={stage2number[card.stage]}
+              stage={card.stage}
+              comments={card.comments}
+              handleDelete={handleDelete}
+              text={card.description}
+              changeSelectedCardIds={changeSelectedCardIds}
+              selectedCardIds={selectedCardIds}
+            />
+          )
+        })}
 
-      {links.map((ar, idx) => (
-        <Xarrow
-          className="arrow"
-          path={linksPath}
-          headSize={4}
-          start={ar.start+"-right"}
-          end={ar.end+"-left"}
-          startAnchor={"right"}
-          endAnchor={"left"}
-          key={ar.start + "." + ar.end}
-          labels={""}
-          zIndex={0}
-          color="#9CAFB7"
-        />
-      ))}
-
+        {links.map((ar, idx) => (
+          <Xarrow
+            className="arrow"
+            path={linksPath}
+            headSize={4}
+            start={ar.start + "-right"}
+            end={ar.end + "-left"}
+            startAnchor={"right"}
+            endAnchor={"left"}
+            key={ar.start + "." + ar.end}
+            labels={""}
+            zIndex={0}
+            color="#9CAFB7"
+          />
+        ))}
+      </div>
       <div className="flex flex-row fixed top-20 left-4 z-10">
         <input
           type="text"
@@ -201,9 +255,7 @@ const Canvas = () => {
       </div>
 
       <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
-
-      <EvaluationPanel selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number}/>
-        {/* Shallow copy */}
+      <EvaluationPanel selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
       <MiniMap />
 
 
@@ -249,9 +301,9 @@ const Canvas = () => {
           </div>
         </div>
       </div>
-    </div>
+    </>
 
-    // </DndProvider>
+    // </DndProvider >
   );
 };
 
