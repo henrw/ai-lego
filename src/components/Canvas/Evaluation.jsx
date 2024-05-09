@@ -11,9 +11,9 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
     const [problemText, setProblemText] = useState("");
     const [valueText, setValueText] = useState("");
     const [stakeholderText, setStakeholderText] = useState("");
-    // const [impactText, setImpactText] = useState("");
+    const [impactText, setImpactText] = useState("");
     const [typeOfImpact, setTypeOfImpact] = useState('');
-    const [degreeOfImpact, setDegreeOfImpact] = useState('');
+    const [degreeOfImpact, setDegreeOfImpact] = useState(4);
     const [scaleOfImpact, setScaleOfImpact] = useState('');
     const [openText, setOpenText] = useState("");
     const addEvaluation = useMyStore((store) => store.addEvaluation);
@@ -22,9 +22,9 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
         setProblemText("");
         setValueText("");
         setStakeholderText("");
-        // setImpactText("");
+        setImpactText("");
         setTypeOfImpact("");
-        setDegreeOfImpact("");
+        setDegreeOfImpact(4);
         setScaleOfImpact("");
         setOpenText("");
     }
@@ -35,7 +35,7 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                 {/* Panel content goes here - it will show when expanded */}
                 {isExpanded && (
                     <>
-                        <div className="flex flex-row items-center mb-4">
+                        <div className="flex flex-row items-center mb-2">
                             <h2 className="font-bold">Evaluation Report #{number}</h2>
                             <button
                                 onClick={() => togglePanel()}
@@ -46,10 +46,11 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                                 </svg>
                             </button>
                         </div>
+                        <div className="flex mb-3 text-base">Please discuss the ethical issue you identified by answering the following prompts</div>
                         <div className="mb-3">
-                            <p>Related Stage(s):</p>
+                            <p>0. Related Stage(s):</p>
                             {
-                                selectedCardIds.length !== 0 && (
+                                selectedCardIds.length !== 0 ? (
                                     <div className="flex flex-row gap-1">
                                         {
                                             selectedCardIds.map((cardId) => {
@@ -63,6 +64,8 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                                             )
                                         }
                                     </div>
+                                ) : (
+                                    <div>[Select all stages that apply (click on the cards)]</div>
                                 )
                             }
                         </div>
@@ -74,16 +77,16 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                                 onChange={(e) => setProblemText(e.target.value)}
                             />
                         </div>
-                        <div className="mb-3">
+                        {/* <div className="mb-3">
                             <p>2. What are some <strong>societal values</strong> impacted in this issue?</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={valueText}
                                 onChange={(e) => setValueText(e.target.value)}
                             />
-                        </div>
+                        </div> */}
                         <div className="mb-3">
-                            <p>3. <strong>Who</strong> is at risk of experiencing the issue?</p>
+                            <p>2. <strong>Who</strong> is at risk of experiencing the issue?</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={stakeholderText}
@@ -93,8 +96,35 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
 
                         <div className="mb-1 space-y-4">
                             {/* Dropdown for Types of Impact */}
-                            <p>4. How is the <strong>impact</strong>?</p>
-                            <div>
+                            <p>3. What is the potential downstream <strong>impact</strong>?</p>
+                            <textarea
+                                className="w-full border border-gray-300 p-2 mb-2 rounded"
+                                value={impactText}
+                                onChange={(e) => setImpactText(e.target.value)}
+                            />
+                            <p>3.1 How severe is the impact?</p>
+                            <div className="flex flex-row mb-3">
+                                <div className="flex flex-col flex-grow">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="7"
+                                        value={degreeOfImpact}
+                                        onChange={(e) => setDegreeOfImpact(e.target.value)}
+                                        className="slider flex w-full"
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span className="text-xs">Not at all</span>
+                                        <span className="text-xs">Moderate</span>
+                                        <span className="text-xs">&nbsp;&nbsp;Extreme</span>
+                                    </div>
+                                </div>
+                                <div className="flex flex-shrink px-1">
+                                    {degreeOfImpact}
+                                </div>
+                            </div>
+
+                            {/* <div>
                                 <label htmlFor="types-of-impact" className="block  font-sm">Types of Impact</label>
                                 <select
                                     id="types-of-impact"
@@ -110,9 +140,8 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                                     <option value="overrepresentation">Overrepresentation</option>
                                     <option value="underrepresentation">Underrepresentation</option>
                                 </select>
-                            </div>
-
-                            {/* Scale for Degree of Impact */}
+                            </div> */}
+                            {/* 
                             <fieldset className="space-y-2">
                                 <legend className="text-sm font-medium ">Degree of Impact</legend>
                                 <div className="flex items-center space-x-4">
@@ -132,7 +161,6 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                                 </div>
                             </fieldset>
 
-                            {/* Scale for Scale of Impact */}
                             <fieldset className="space-y-2">
                                 <legend className="text-sm font-medium ">Scale of Impact</legend>
                                 <div className="flex items-center space-x-4">
@@ -150,11 +178,11 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                                         </label>
                                     ))}
                                 </div>
-                            </fieldset>
+                            </fieldset> */}
                         </div>
 
                         <div className="mb-3">
-                            <p>5. Any other comments?</p>
+                            <p>4. Any other comments?</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={openText}
@@ -162,7 +190,7 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { problem: problemText, value: valueText, stakeholder: stakeholderText, impact: [typeOfImpact, degreeOfImpact, scaleOfImpact].join('-'), open: openText }); resetTextInput(); setIsExpanded(); }}>
+                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { problem: problemText, stakeholder: stakeholderText, impact: [impactText, degreeOfImpact].join('-'), open: openText }); resetTextInput(); setIsExpanded(); }}>
                             Submit
                         </button>
                     </>

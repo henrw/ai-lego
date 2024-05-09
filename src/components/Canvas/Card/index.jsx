@@ -7,7 +7,6 @@ import Popup from "reactjs-popup";
 import { v4 as uuidv4 } from "uuid";
 import { FaSave } from "react-icons/fa";
 import { FaEdit } from "react-icons/fa";
-import CommentComponent from "./Comment";
 import MessageBox from "./Message";
 import EvaluationBox from "./Evaluation";
 import { useUserAuth } from "../../../authentication/UserAuthContext";
@@ -181,6 +180,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
         extendCanvasBottom();
         // }
       }}
+      cancel=".no-drag"
     >
       <div
         className={`absolute z-1 text-sm flex flex-col justify-center w-60 bg-white rounded shadow ${selectedCardIds.includes(id) ? "outline outline-4 outline-blue-400" : ""}`} // w-96 for fixed width
@@ -258,9 +258,9 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
           </div>
           <textarea
             id={id + "-textarea"}
-            className="p-2 w-60 outline-none text-md"
+            className="no-drag p-2 w-60 outline-none text-md"
             value={text}
-            style={{ resize: "none", minHeight: '40px', height: 'auto' }}
+            style={{ resize: "none", minHeight: '40px', height: 'auto', draggable: 'false' }}
             onClick={(event) => { event.stopPropagation(); }}
             onChange={(e) => handleTextChange(e.target, id)}
             onBlur={() => { setShowPrompt(false); }}

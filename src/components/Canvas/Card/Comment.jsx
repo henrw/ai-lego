@@ -32,7 +32,7 @@ export default function CommentComponent({
                     {showReplyInput && (
                         <div className="mt-2">
                             <textarea
-                                className="w-full border border-gray-300 p-2 mb-2 rounded"
+                                className="no-drag w-full border border-gray-300 p-2 mb-2 rounded"
                                 placeholder="Type your reply here..."
                                 value={replyText}
                                 onChange={(e) => setReplyText(e.target.value)}

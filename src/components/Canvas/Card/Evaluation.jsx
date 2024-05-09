@@ -2,8 +2,8 @@ import React, { useRef, useState, useEffect } from "react";
 import useMyStore from "../../../contexts/projectContext";
 
 export default function EvaluationBox({ evaluationData }) {
-
-    const { by, time, profileImg, problem, value, stakeholders, impact, open } = evaluationData;
+    console.log(evaluationData)
+    const { by, time, profileImg, problem, value, stakeholder, impact, open } = evaluationData;
 
     const [dropdownState, setDropdownState] = useState(false);
     return (
@@ -17,8 +17,8 @@ export default function EvaluationBox({ evaluationData }) {
                 <div className="relative text-sm font-normal bg-red-200 rounded p-2">
                     <div>
                         <p className="text-sm font-normal py-2.5 ">Problem: {problem}</p>
-                        <p className="text-sm font-normal py-2.5 ">Value: {value}</p>
-                        <p className="text-sm font-normal py-2.5 ">Stakeholders: {stakeholders}</p>
+                        {/* <p className="text-sm font-normal py-2.5 ">Value: {value}</p> */}
+                        <p className="text-sm font-normal py-2.5 ">Stakeholders: {stakeholder}</p>
                         <p className="text-sm font-normal py-2.5 ">Impact: {impact}</p>
                         <p className="text-sm font-normal py-2.5 ">Open-ended Comment: {open}</p>
                     </div>

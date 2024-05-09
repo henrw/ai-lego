@@ -6,8 +6,8 @@ export default function MessageBox({ commentId, name, time, profileImg, message 
     const deleteComment = useMyStore((store) => store.deleteComment);
     const [dropdownState, setDropdownState] = useState(false);
     return (
-        <div className="flex items-start mb-1 ">
-            <img className="w-8 h-8 rounded-full" src="/profile-pic.png" alt="Jese image" />
+        <div className="flex items-start mb-1 no-drag">
+            <img className="w-8 h-8 rounded-full no-drag" src="/profile-pic.png" alt="Jese image" onDrag={(e)=>{e.stopPropagation()}} onDragStart={(e)=>{e.stopPropagation()}} onDragStop={(e)=>{e.stopPropagation()}} />
             <div className="flex flex-col w-full leading-1.5 ml-1">
                 <div className="flex items-left space-x-2 text-xs">
                     {/* <span className="font-semibold">{name}</span> */}
