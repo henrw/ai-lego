@@ -67,7 +67,7 @@ code {
     width: 250px;
     height: 0;
     background-color: #f1f1f1;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5); */
     transition: height 0.3s ease-in-out, opacity 0.3s ease, width 0.3s ease-in-out;
     overflow: hidden;
     opacity: 0;
@@ -96,7 +96,7 @@ code {
     /* Make it round */
     width: 100px;
     /* Adjust size for collapsed state */
-    height: 50px;
+    height: 40px;
     /* Same as width to make it round */
     right: 20px;
     /* Position at the bottom right corner */
@@ -109,9 +109,8 @@ code {
     bottom: 20px;
     right: 20px;
     width: 100px;
-    height: 50px;
-    border-radius: 10px;
-    background-color: rgb(154, 72, 255);
+    height: 40px;
+    /* border-radius: 10px; */
     color: white;
     border: none;
     cursor: pointer;

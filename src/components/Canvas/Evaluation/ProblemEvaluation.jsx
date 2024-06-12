@@ -1,9 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
-import { useUserAuth } from "../../authentication/UserAuthContext";
-import useMyStore from "../../contexts/projectContext";
-import { colorClasses } from "../../contexts/projectContext";
+import { useUserAuth } from "../../../authentication/UserAuthContext";
+import useMyStore from "../../../contexts/projectContext";
+import { colorClasses } from "../../../contexts/projectContext";
 
-export default function EvaluationPanel({ selectedCardIds, number, cardsData, cardId2number }) {
+export default function ProblemEvaluation({ selectedCardIds, number, cardsData, cardId2number }) {
     const [isExpanded, setIsExpanded] = useState(false);
     const { user } = useUserAuth();
 
@@ -36,7 +36,7 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                 {isExpanded && (
                     <>
                         <div className="flex flex-row items-center mb-2">
-                            <h2 className="font-bold">Evaluation Report #{number}</h2>
+                            <h2 className="font-bold">Problem Evaluation</h2>
                             <button
                                 onClick={() => togglePanel()}
                                 className="text p-1 ml-auto text-gray-400 hover:text-red-500"
@@ -102,7 +102,7 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                                 value={impactText}
                                 onChange={(e) => setImpactText(e.target.value)}
                             />
-                            <p>3.1 How severe is the impact?</p>
+                            <p>How severe is the impact?</p>
                             <div className="flex flex-row mb-3">
                                 <div className="flex flex-col flex-grow">
                                     <input
@@ -196,7 +196,7 @@ export default function EvaluationPanel({ selectedCardIds, number, cardsData, ca
                     </>
                 )}
             </div>
-            {!isExpanded && <button className="round-button font-bold z-30" onClick={togglePanel}>Evaluate</button>}
+            {!isExpanded && <button className="round-button bg-black text-white bottom-[120px] z-10" onClick={togglePanel}>Problem</button>}
         </>
     );
 };

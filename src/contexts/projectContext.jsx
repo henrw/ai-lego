@@ -149,18 +149,18 @@ const cardsDatatemplates = {
 
 export const prompts = {
   problem:
-    "Brief the problem or challenge that can be solved by AI in simple words, highlighting its significance and potential impact on target users or stakeholders.",
-  task: "Explain how AI focuses on the specific task that aims to solve the problem.",
-  data: "Describe how the data for training the AI system is collected and prepared in plain language, emphasizing the data preprocessing and any feature engineering technologies that are applied to the raw data.",
+    "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+  task: "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+  data: "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
   model:
-    "Explain what AI model architecture and algorithms are being used and  and their respective roles in simple terms.",
+    "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
   train:
-    "Describe how the AI model learns from the data, and clarify the process of how it improves its performance.",
-  test: "Explain how the AI model is evaluated and assessed for its effectiveness and accuracy, using plain words to highlight the testing process.",
+    "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+  test: "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
   deploy:
-    "Describe how the AI system is deployed in practical use, emphasizing the benefits and potential impact on users or stakeholders.",
+    "Describe how the AI solution is implemented and integrated into practical use environments.",
   feedback:
-    "Explain how feedback is gathered from users or stakeholders to improve the AI system and highlight how it helps the iteration of AI development.",
+    "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
 };
 
 export const colorClasses = {
@@ -171,14 +171,25 @@ export const colorClasses = {
   train: "train",
   test: "test",
   deploy: "deploy",
+  feedback: "feedback",
   design: "design",
   develop: "develop",
   modelEvaluation: "modelEva",
   modelDevelopment: "modelDev",
   MLOps: "MLOps",
-  feedback: "feedback",
   problemDef: "problemDef",
   "➕": "➕",
+};
+
+export const stageEvaluationPrompts = {
+  problem: "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+  task: "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+  data: "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+  model: "Is the choice of models, proxities, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+  train: "Can you think of ways the training process might go wrong? If so, how?",
+  test: "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+  deploy: "Does the deployment of the AI fit with the real-world practical use environments?",
+  feedback: "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
 };
 
 const myStore = (set) => ({
