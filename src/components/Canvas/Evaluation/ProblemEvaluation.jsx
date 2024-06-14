@@ -3,8 +3,7 @@ import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore from "../../../contexts/projectContext";
 import { colorClasses } from "../../../contexts/projectContext";
 
-export default function ProblemEvaluation({ selectedCardIds, number, cardsData, cardId2number }) {
-    const [isExpanded, setIsExpanded] = useState(false);
+export default function IssueEvaluation({isExpanded, setIsExpanded, selectedCardIds, number, cardsData, cardId2number }) {
     const { user } = useUserAuth();
 
     const togglePanel = () => setIsExpanded(!isExpanded);
@@ -36,7 +35,7 @@ export default function ProblemEvaluation({ selectedCardIds, number, cardsData, 
                 {isExpanded && (
                     <>
                         <div className="flex flex-row items-center mb-2">
-                            <h2 className="font-bold">Problem Evaluation</h2>
+                            <h2 className="font-bold">Issue Evaluation</h2>
                             <button
                                 onClick={() => togglePanel()}
                                 className="text p-1 ml-auto text-gray-400 hover:text-red-500"
@@ -48,7 +47,7 @@ export default function ProblemEvaluation({ selectedCardIds, number, cardsData, 
                         </div>
                         <div className="flex mb-3 text-base">Please discuss the ethical issue you identified by answering the following prompts</div>
                         <div className="mb-3">
-                            <p>0. Related Stage(s):</p>
+                            <p>Related Stage(s):</p>
                             {
                                 selectedCardIds.length !== 0 ? (
                                     <div className="flex flex-row gap-1">
@@ -70,7 +69,7 @@ export default function ProblemEvaluation({ selectedCardIds, number, cardsData, 
                             }
                         </div>
                         <div className="mb-3">
-                            <p>1. Briefly describe the issue:</p>
+                            <p>Briefly describe the issue:</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={problemText}
@@ -86,7 +85,7 @@ export default function ProblemEvaluation({ selectedCardIds, number, cardsData, 
                             />
                         </div> */}
                         <div className="mb-3">
-                            <p>2. <strong>Who</strong> is at risk of experiencing the issue?</p>
+                            <p><strong>Who</strong> is at risk of experiencing the issue?</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={stakeholderText}
@@ -96,7 +95,7 @@ export default function ProblemEvaluation({ selectedCardIds, number, cardsData, 
 
                         <div className="mb-1 space-y-4">
                             {/* Dropdown for Types of Impact */}
-                            <p>3. What is the potential downstream <strong>impact</strong>?</p>
+                            <p>What is the potential downstream <strong>impact</strong>?</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={impactText}
@@ -182,7 +181,7 @@ export default function ProblemEvaluation({ selectedCardIds, number, cardsData, 
                         </div>
 
                         <div className="mb-3">
-                            <p>4. Any other comments?</p>
+                            <p>Any other comments?</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={openText}
@@ -190,13 +189,13 @@ export default function ProblemEvaluation({ selectedCardIds, number, cardsData, 
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { problem: problemText, stakeholder: stakeholderText, impact: [impactText, degreeOfImpact].join('-'), open: openText }); resetTextInput(); setIsExpanded(); }}>
+                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { type: "problem", problem: problemText, stakeholder: stakeholderText, impact: [impactText, degreeOfImpact].join('-'), open: openText }); resetTextInput(); setIsExpanded(); }}>
                             Submit
                         </button>
                     </>
                 )}
             </div>
-            {!isExpanded && <button className="round-button bg-black text-white bottom-[120px] z-10" onClick={togglePanel}>Problem</button>}
+            {!isExpanded && <button className="round-button bg-black text-white bottom-[120px] z-10" onClick={togglePanel}>Issue</button>}
         </>
     );
 };

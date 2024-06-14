@@ -15,7 +15,6 @@ import html2canvas from 'html2canvas';
 
 import PersonaIcon from './Persona';
 
-
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { db, storage } from "../../firebase"; // Ensure you have this import
@@ -31,11 +30,6 @@ const Canvas = () => {
   };
   const closeModal = () => {
     setIsModalOpen(false);
-  };
-
-  const getBgColorClassFromId = (stage) => {
-    const bgColorClass = `bg-${colorClasses[stage]}`;
-    return bgColorClass;
   };
 
   const [selectedCardIds, setSelectedCardIds] = useState([]);
@@ -55,29 +49,32 @@ const Canvas = () => {
   const [candidatePersonas, setCandidatePersonas] = useState([]);
   const [personaInputText, setPersonaInputText] = useState("");
 
+  const [isPersonaEvaluationExpanded, setIsPersonaEvaluationExpanded] = useState(false);
+  const [isStageEvaluationExpanded, setIsStageEvaluationExpanded] = useState(false);
+  const [isProblemEvaluationExpanded, setIsProblemEvaluationExpanded] = useState(false);
 
   const [personas, setPersonas] = useState([]);
 
-  const addPersona = async () => {
-    var imageRef = ref(
-      storage,
-      `persona_pictures/boy.png`
-    );
-    getDownloadURL(imageRef)
-      .then((url) => {
-        // Update the state with the new URL
-        setPersonas([...personas,
-          {
-            imgUrl: url,
-            description: personaInputText,
-          }]);
-        console.log(personas);
+  const [personaImgIdx, setPersonaImgIdx] = useState(0);
+  const personaImgUrls = [
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fboy.png?alt=media&token=8a12acfa-25f2-44a9-90f4-ef407aeff3dc",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fboy1.png?alt=media&token=dc0961de-51f1-43ba-9d4d-e3b8ae999a35",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fgirl.png?alt=media&token=cee9ed5a-72ce-4855-bd0a-abba8014d0fb",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fgrandma.png?alt=media&token=62911dc9-8cbf-48ff-b1e5-ceb1a186f323",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fgrandpa.png?alt=media&token=c12f735a-71e3-44d0-a59f-897cf5b83be4",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fman.png?alt=media&token=92fed1b8-75a9-4b2b-8f4a-febd7d76c506",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fneutral.png?alt=media&token=3523e99c-1ddb-4fe6-82ad-7fd0feae778d",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fwoman.png?alt=media&token=f74c9d68-b0f2-4d4c-8ecd-fcb76e3122eb"
+  ]
 
-      })
-      .catch((error) => {
-        console.error("Error fetching the image URL:", error);
-        // Handle errors or set a default image perhaps
-      });
+  const addPersona = async () => {
+    setPersonas([...personas,
+      {
+        imgUrl: personaImgUrls[personaImgIdx],
+        description: personaInputText,
+        isSelected: false
+      }]);
+      console.log(personas);
   }
 
   // useEffect(() => {
@@ -222,6 +219,13 @@ const Canvas = () => {
 
   }
 
+  function togglePersonaSelection(idx) {
+    const newPersonas = [...personas];
+    newPersonas.forEach((persona, i) => { if (idx !== i) { persona.isSelected = false } });
+    newPersonas[idx].isSelected = !newPersonas[idx].isSelected;
+    setPersonas(newPersonas);
+  }
+
   async function saveImageToFirestore(imageDataURL) {
     const blob = dataURLtoBlob(imageDataURL);
     const downloadUrl = await uploadImageToStorage(blob, `project_snapshots/${projectId}.png`); // _${Date.now() Upload the image to Firebase Storage
@@ -332,66 +336,77 @@ const Canvas = () => {
 
       <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
 
-      <p className="fixed bottom-[170px] right-6 font-bold text-lg">Evaluation:</p>
-      <ProblemEvaluation selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
-      <StageEvaluation selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
-      <PersonaEvaluation selectedCardIds={[]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
+      <p className="fixed bottom-[170px] right-6 font-bold text-lg z-30">Evaluation:</p>
+      <ProblemEvaluation isExpanded={isProblemEvaluationExpanded} setIsExpanded={setIsProblemEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
+      <StageEvaluation isExpanded={isStageEvaluationExpanded} setIsExpanded={setIsStageEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
+      <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} />
 
       <MiniMap />
 
-      <div className="fixed bottom-[50%] transform translate-y-1/2 left-0 mb-4 ml-4 z-10">
+      <div className={`fixed top-20 ${(isProblemEvaluationExpanded || isStageEvaluationExpanded || isPersonaEvaluationExpanded) ? "right-[400px]" : "right-0"} mb-4 ml-4 z-10`}>
         <div className="flex flex-row">
-          <div className="flex flex-col">
-            <p className="font-bold text-lg">Personas:</p>
+          <p className="font-bold text-lg mr-2">Personas:</p>
+          <div className="ml-auto flex flex-row fixed relative">
             {
-              personas.map((persona, index) => (
-                <PersonaIcon imgUrl={persona.imgUrl} description={persona.description} />
-              ))
-            }
-            <div className="flex flex-row">
-              {
-                !newPersona ? <p className="pl-4" style={{ cursor: 'pointer' }} onClick={() => { setNewPersona(true) }}>➕</p> :
-                  <div className="bg-white p-3 border border-1 border-gray">
-                    <p className="mb-2">Describe a stakeholder that potentially would be negatively impacted by the AI product.</p>
-                    <textarea
-                      className="no-drag w-full border border-gray-300 p-2 mb-2 rounded"
-                      placeholder="Define your persona..."
-                      value={personaInputText}
-                      onChange={(e) => setPersonaInputText(e.target.value)}
-                    />
-                    {candidatePersonas.length !== 0 && (
-                      candidatePersonas.map(item =>
-                        <p
-                          onClick={() => { setPersonaInputText(item) }}
-                          className="rounded border border-1 border-gray-100 my-1 p-1 hover:bg-blue-100 cursor-pointer">{item}</p>
-                      )
-                    )}
-                    <div className="flex
-                     flex-row">
-                      <button
-                      onClick={()=>{setNewPersona(false); setPersonaInputText("")}}
-                      class="hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 border border-gray-400 rounded inline-flex items-center">
-                      Close
-                      </button>
-                      <button
-                        onClick={generatePersona}
-                        type="button" className="ml-auto focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Help from AI</button>
-                      <button
-                        onClick={() => { addPersona(); setNewPersona(false) }}
-                        type="button" className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
+              !newPersona ? <button type="button" onClick={() => { setNewPersona(true) }} className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-1 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Create</button> :
+                <div className="bg-white p-3 z-30 w-[500px] border border-1 border-gray absolute right-0">
+                  <div className="flex justify-center">
+                    <div className="flex p-2 justify-center rounded-full bg-blue-200 w-[100px] h-[100px] relative">
+                      <img src={personaImgUrls[personaImgIdx]} alt="persona lego" style={{ "object-fit": "contain" }} className="" />
+                      <svg onClick={()=>{setPersonaImgIdx((personaImgIdx+1)%personaImgUrls.length)}}
+                      className="absolute cursor-pointer bottom-1 right-1" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M17.7274 7.92943C17.2484 6.14165 16.1643 4.57528 14.6598 3.49721C13.1554 2.41914 11.3236 1.89606 9.47677 2.01711C7.62989 2.13816 5.88212 2.89585 4.53125 4.16107C3.18039 5.42629 2.31002 7.12077 2.06843 8.95577C1.82685 10.7908 2.22901 12.6528 3.20638 14.2245C4.18375 15.7963 5.67586 16.9805 7.42848 17.5754C9.1811 18.1704 11.0858 18.1392 12.818 17.4872C14.5502 16.8353 16.0028 15.6029 16.9282 14" stroke="black" stroke-width="2" stroke-linejoin="round" />
+                        <path d="M19.0353 4.13629L18 8L14.1363 6.96472" stroke="black" stroke-width="2" stroke-linejoin="round" />
+                      </svg>
+
                     </div>
                   </div>
-              }
-            </div>
+                  <p className="my-2">Describe a stakeholder who might potentially be negatively impacted by the AI product.</p>
+                  <textarea
+                    className="no-drag w-full border border-gray-300 p-2 mb-2 rounded"
+                    placeholder="Describe your persona..."
+                    value={personaInputText}
+                    onChange={(e) => setPersonaInputText(e.target.value)}
+                  />
+                  {candidatePersonas.length !== 0 && (
+                    candidatePersonas.map(item =>
+                      <p
+                        onClick={() => { setPersonaInputText(item) }}
+                        className="rounded border border-1 border-gray-100 my-1 p-1 hover:bg-blue-100 cursor-pointer">{item}</p>
+                    )
+                  )}
+                  <div className="flex
+                     flex-row">
+                    <button
+                      onClick={() => { setNewPersona(false); setPersonaInputText("") }}
+                      class="hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 border border-gray-400 rounded inline-flex items-center">
+                      Close
+                    </button>
+                    <button
+                      onClick={generatePersona}
+                      type="button" className="ml-auto focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Help from AI</button>
+                    <button
+                      onClick={() => { addPersona(); setNewPersona(false) }}
+                      type="button" className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
+                  </div>
+                </div>
+            }
           </div>
-          <div
-            className={`h-min w-[300px] bg-black text-white text-center fixed left-[110px] z-[1001] transition-opacity duration-300 ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
+        </div>
+        <div className="flex flex-row justify-end">
+          {
+            personas.map((persona, index) => (
+              <PersonaIcon imgUrl={persona.imgUrl} description={persona.description} isSelected={persona.isSelected} toggleFunction={togglePersonaSelection} idx={index} />
+            ))
+          }
+          {/* <div
+            className={`h-min w-[300px] bg-black text-white text-center fixed left-[110px] z-[1001] transition-opacity duration-300 whitespace-pre-wrap ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
             style={{
               top: `${hoverY}px`
             }}>
             {prompts[hovered]}
 
-          </div>
+          </div> */}
 
         </div>
       </div>
@@ -430,7 +445,7 @@ const Canvas = () => {
             }
           </div>
           <div
-            className={`h-min w-[300px] bg-black text-white text-center fixed left-[110px] z-[1001] transition-opacity duration-300 ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
+            className={`h-min w-[300px] bg-black text-white text-left pl-2 fixed left-[110px] z-[1001] transition-opacity duration-300 whitespace-pre-wrap ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
             style={{
               top: `${hoverY}px`
             }}>

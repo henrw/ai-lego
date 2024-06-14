@@ -88,10 +88,12 @@ const getBgColorClassFromId = (stage) => {
 
 export default function Card({ id, stage, number, handleDelete, text, comments, changeSelectedCardIds, selectedCardIds }) {
 
+  let textArea = null;
   useEffect(() => {
-    const textArea = document.getElementById(id + "-textarea");
+    textArea = document.getElementById(id + "-textarea");
+    textArea.value = text;
     textArea.style.height = textArea.scrollHeight + 'px';
-  })
+  }, []);
 
   const { user } = useUserAuth();
   const borderColorClass = getBorderColorClassFromId(id);
@@ -132,22 +134,13 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
     textArea.style.height = textArea.scrollHeight + 'px';
   };
 
-  // const handleReplyToComment = (parentId, replyText) => {
-  //   if (!replyText) return; // Don't add empty replies
-
-  //   const newReply = {
-  //     id: uuidv4(),
-  //     text: replyText,
-  //     parentId,
-  //     childComments: [],
-  //   };
-
-  //   /// Add newReply to comments state
-  //   setComments((currentComments) => {
-  //     const updatedComments = [...currentComments, newReply];
-  //     return updatedComments;
-  //   });
-  // };
+  const setTextWrapper = (text) => {
+    if (textArea) {
+        textArea.value = text;  // Update the text in the textarea
+        textArea.style.height = "auto";  // Reset height to ensure the new height calculation is correct
+        textArea.style.height = textArea.scrollHeight + "px";  // Set the height to the scroll height
+    }
+}
 
   // Add state to control the visibility of the popup
   const [showSmallCommentBox] = useState(true); // New state for small comment box
@@ -197,18 +190,18 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
             <div className="flex flex-row">
               <div onMouseOver={() => setShowPrompt(true)} onMouseOut={() => setShowPrompt(false)}>{stageName}#{number}</div>
               {
-                (comments.length) !== 0 && (
+                (evaluationData.length) !== 0 && (
                   <button className="ml-1 text-white"
                     onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
                     <svg className="w-7 h-7" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="5%" y="5%" width="26" height="21" fill="#fcba03"></rect>
-                      <path d="M27 0H3C1.35 0 0 1.35 0 3V30L6 24H27C28.65 24 30 22.65 30 21V3C30 1.35 28.65 0 27 0ZM27 21H4.8L3 22.8V3H27V21Z" fill="#fcba03" stroke="" strokeWidth="1" />
-                      <text x="50%" y="48%" className="text-sm" textAnchor="middle" fill="black" dominantBaseline="central">{comments.length}</text>
+                      <rect x="5%" y="5%" width="26" height="21" fill="#fca5a5"></rect>
+                      <path d="M27 0H3C1.35 0 0 1.35 0 3V30L6 24H27C28.65 24 30 22.65 30 21V3C30 1.35 28.65 0 27 0ZM27 21H4.8L3 22.8V3H27V21Z" fill="#fca5a5" stroke="" strokeWidth="1" />
+                      <text x="50%" y="48%" className="text-sm" textAnchor="middle" fill="black" dominantBaseline="central">{evaluationData.length}</text>
                     </svg>
                   </button>
                 )
               }
-              {
+              {/* {
                 (evaluationData.length) !== 0 && (
                   <button className="ml-1 text-white"
                     onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
@@ -218,7 +211,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
                     </svg>
                   </button>
                 )
-              }
+              } */}
 
 
             </div>
@@ -237,7 +230,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
             </div>
           )} */}
           <div
-            className={`absolute bottom-[100%] left-0 h-min w-60 bg-black text-white text-center fixed z-10 transition-opacity duration-300 ${showPrompt ? "visible opacity-100" : "invisible opacity-0"}`}>
+            className={`absolute bottom-[100%] left-0 h-min w-60 bg-black text-white text-left p-2 fixed z-10 whitespace-pre-wrap transition-opacity duration-300 ${showPrompt ? "visible opacity-100" : "invisible opacity-0"}`}>
             {prompt}
           </div>
         </div>
@@ -255,11 +248,10 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
           <textarea
             id={id + "-textarea"}
             className="no-drag p-2 w-60 outline-none text-md"
-            value={text}
             style={{ resize: "none", minHeight: '40px', height: 'auto', draggable: 'false' }}
             onClick={(event) => { event.stopPropagation(); }}
-            onChange={(e) => handleTextChange(e.target, id)}
-            onBlur={() => { setShowPrompt(false); }}
+            onChange={(e) => setTextWrapper(e.target.value)}
+            onBlur={(e) => { setShowPrompt(false); handleTextChange(e.target, id);}}
             onFocus={() => { setShowPrompt(true); }}
             onDoubleClick={() => { }}
             placeholder="Describe this stage..."
@@ -268,7 +260,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
         <div className={`flex flex-col grow-1`}>
           {showComments && (
             <div className={`${bgColorClass} space-y-2 p-2`}>
-              <div className="font-mono font-bold">Issues</div>
+              <div className="font-mono font-bold">Evaluation</div>
               <div className="overflow-y-auto overflow-x-hidden max-h-80 h-100">
                 {
                   comments.map((comment) => (

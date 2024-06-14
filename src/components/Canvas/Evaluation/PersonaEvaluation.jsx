@@ -3,18 +3,51 @@ import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore from "../../../contexts/projectContext";
 import { colorClasses } from "../../../contexts/projectContext";
 
-export default function PersonaEvaluation({ selectedCardIds, number, cardsData, cardId2number }) {
-    const [isExpanded, setIsExpanded] = useState(false);
+export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedCardIds, number, cardsData, cardId2number, selectedPersona }) {
     const { user } = useUserAuth();
 
     const togglePanel = () => setIsExpanded(!isExpanded);
-    const [problemText, setProblemText] = useState("");
-    const [promptText, setPromptText] = useState("");
     const addEvaluation = useMyStore((store) => store.addEvaluation);
 
     const resetTextInput = () => {
-        setProblemText("");
+        const textArea = document.getElementById("persona-eval-textarea");
+        textArea.value = "";
     }
+
+    const getProblemText = () => {
+        const textArea = document.getElementById("persona-eval-textarea");
+        return textArea.value;
+    }
+
+    const setProblemTextWrapper = (text) => {
+        const textArea = document.getElementById("persona-eval-textarea");
+        if (textArea) {
+            textArea.value = text;  // Update the text in the textarea
+            textArea.style.height = "auto";  // Reset height to ensure the new height calculation is correct
+            textArea.style.height = textArea.scrollHeight + "px";  // Set the height to the scroll height
+        }
+    }
+
+    const evaluatePersona = async () => {
+        const response = await fetch("/api/evaluate", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                personaDescription: selectedPersona[0].description,
+                cardsData: cardsData
+            }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            setProblemTextWrapper(data.res);
+            console.log(data.res);
+        } else {
+            console.error('Failed to fetch:', response.status);
+        }
+    };
 
     return (
         <>
@@ -37,37 +70,38 @@ export default function PersonaEvaluation({ selectedCardIds, number, cardsData, 
                         <div className="mb-3">
                             <p>Selected Persona:</p>
                             {
-                                selectedCardIds.length === 1 ? (
-                                    <div className="flex flex-row gap-1">
-                                        {
-                                            selectedCardIds.map((cardId) => {
-                                                const stage = cardsData.filter(cardData => cardData.uid === cardId)[0].stage;
-                                                return (
-                                                    <div className={`rounded-full p-1 bg-${colorClasses[stage]}`}>
-                                                        {stage}#{cardId2number[cardId]}
-                                                    </div>
-                                                );
-                                            }
-                                            )
-                                        }
+                                selectedPersona.length === 1 ? (
+                                    <div className="flex flex-col w-full items-center gap-1">
+                                        <img src={selectedPersona[0].imgUrl} width={50} alt="persona"></img>
+                                        <p>{selectedPersona[0].description}</p>
                                     </div>
                                 ) : (
                                     <div>[Select one persona (click on the persona icon)]</div>
                                 )
                             }
                         </div>
-                        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { problem: problemText, }); resetTextInput(); setIsExpanded(); }}>
-                            Generate
-                        </button>
-                        
+                        {
+                            selectedPersona.length === 1 && (
+                                <button type="button" class="focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-5 py-2.5 mb-2 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900"
+                                    onClick={evaluatePersona}>
+                                    Simulate persona's feeling
+                                </button>
+                            )
+                        }
+
                         <div className="mt-3">
                             <textarea
+                                id="persona-eval-textarea"
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
-                                value={problemText}
-                                onChange={(e) => setProblemText(e.target.value)}
+                                // value={problemText}
+                                onChange={(e) => setProblemTextWrapper(e.target.value)}
                             />
                         </div>
+
+                        <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                            onClick={() => { addEvaluation(user.displayName, [], { type: "persona", personaDescription: selectedPersona[0].description, problem: getProblemText() }); resetTextInput(); setIsExpanded(); }}>
+                            Submit
+                        </button>
                     </>
                 )}
             </div>

@@ -1,28 +1,42 @@
 import React, { useRef, useState, useEffect } from "react";
-import useMyStore from "../../../contexts/projectContext";
 
 export default function EvaluationBox({ evaluationData }) {
     console.log(evaluationData)
-    const { by, time, profileImg, problem, value, stakeholder, impact, open } = evaluationData;
+    const { by, time, profileImg, problem, type, value, stakeholder, impact, open } = evaluationData;
 
     const [dropdownState, setDropdownState] = useState(false);
     return (
-        <div className="flex items-start mb-1">
-            <img className="w-8 h-8 rounded-full" src="/profile-pic.png" alt="Jese image" />
-            <div className="flex flex-col w-full leading-1.5 ml-1">
-                <div className="flex items-left space-x-2 text-xs">
-                    {/* <span className="font-semibold">{name}</span> */}
+        <div className="flex items-start mb-2">
+            <div className="flex flex-col w-full leading-1.5">
+                {/* <div className="flex items-left space-x-2 text-xs">
                     <span className="font-normal text-gray-500">{time}</span>
-                </div>
-                <div className="relative text-sm font-normal bg-red-200 rounded p-2">
-                    <div>
-                        <p className="text-sm font-normal py-2.5 ">Problem: {problem}</p>
-                        {/* <p className="text-sm font-normal py-2.5 ">Value: {value}</p> */}
-                        <p className="text-sm font-normal py-2.5 ">Stakeholders: {stakeholder}</p>
-                        <p className="text-sm font-normal py-2.5 ">Impact: {impact}</p>
-                        <p className="text-sm font-normal py-2.5 ">Open-ended Comment: {open}</p>
-                    </div>
-                    <div className="absolute top-0 right-0">
+                </div> */}
+                <div className="relative text-sm font-normal bg-white p-2">
+                    {
+                        type !== "persona" && (
+                            <div className="flex flex-row items-center">
+                                <img className="w-8 h-8 rounded-full" src="/profile-pic.png" alt="Jese image" />
+                                <span className="ml-2">{by}</span>
+                                <span className="text-gray-500 ml-auto">{type}-wise</span>
+                            </div>
+                        )
+                    }
+                    {
+                        type === "problem" && (
+                            <div>
+                                <p className="text-sm font-normal py-2.5 whitespace-pre-wrap">Problem: {problem}</p>
+                                <p className="text-sm font-normal py-2.5 whitespace-pre-wrap">Stakeholders: {stakeholder}</p>
+                                <p className="text-sm font-normal py-2.5 whitespace-pre-wrap">Impact: {impact}</p>
+                                <p className="text-sm font-normal py-2.5 whitespace-pre-wrap">Open-ended Comment: {open}</p>
+                            </div>
+                        )
+                    }
+                    {
+                        (type === "stage" || type === "persona") && (
+                            <p className="text-sm font-normal py-2.5 whitespace-pre-wrap">{problem}</p>
+                        )
+                    }
+                    {/* <div className="absolute top-0 right-0">
                         <button
                             onClick={() => { setDropdownState(!dropdownState) }}
                             id="dropdownMenuIconButton" data-dropdown-toggle="dropdownDots" data-dropdown-placement="bottom-start"
@@ -54,7 +68,7 @@ export default function EvaluationBox({ evaluationData }) {
                                 </div>
                             )
                         }
-                    </div>
+                    </div> */}
                 </div>
             </div>
         </div>

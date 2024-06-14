@@ -3,8 +3,8 @@ import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore from "../../../contexts/projectContext";
 import { colorClasses } from "../../../contexts/projectContext";
 
-export default function StageEvaluation({ selectedCardIds, number, cardsData, cardId2number }) {
-    const [isExpanded, setIsExpanded] = useState(false);
+export default function StageEvaluation({isExpanded, setIsExpanded, selectedCardIds, number, cardsData, cardId2number }) {
+
     const { user } = useUserAuth();
 
     const togglePanel = () => setIsExpanded(!isExpanded);
@@ -14,6 +14,17 @@ export default function StageEvaluation({ selectedCardIds, number, cardsData, ca
 
     const resetTextInput = () => {
         setProblemText("");
+    }
+
+    const stage2prompt = {
+        problem: "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+        tasks: "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+        data: "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+        model: "Is the choice of models, proxities, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+        train: "Can you think of ways the training process might go wrong? If so, how?",
+        test: "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+        deploy: "Does the deployment of the AI fit with the real-world practical use environments?",
+        feedback: "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?"
     }
 
     return (
@@ -35,7 +46,7 @@ export default function StageEvaluation({ selectedCardIds, number, cardsData, ca
                         </div>
                         <div className="flex mb-3 text-base">Please discuss the ethical issue you identified by answering the following prompts</div>
                         <div className="mb-3">
-                            <p>0. Related Stage:</p>
+                            <p>Related Stage:</p>
                             {
                                 selectedCardIds.length === 1 ? (
                                     <div className="flex flex-row gap-1">
@@ -55,9 +66,15 @@ export default function StageEvaluation({ selectedCardIds, number, cardsData, ca
                                     <div>[Select one stage (click on the card)]</div>
                                 )
                             }
-                        </div>
+                        </div> 
                         <div className="mb-3">
-                            <p>1. Briefly describe the issue:</p>
+                            <p>{
+                            selectedCardIds.map((cardId) => {
+                                const stage = cardsData.filter(cardData => cardData.uid === cardId)[0].stage;
+                                if (stage in stage2prompt)
+                                    return stage2prompt[stage];
+                                return "Briefly describe the issue of this stage:"
+                            })}</p>
                             <textarea
                                 className="w-full border border-gray-300 p-2 mb-2 rounded"
                                 value={problemText}
@@ -65,7 +82,7 @@ export default function StageEvaluation({ selectedCardIds, number, cardsData, ca
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { problem: problemText, }); resetTextInput(); setIsExpanded(); }}>
+                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { type: "stage", problem: problemText, }); resetTextInput(); setIsExpanded(); }}>
                             Submit
                         </button>
                     </>

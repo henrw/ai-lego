@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     });
 
     const json = await response.json();
-
+    console.log(json);
     console.log(json.choices[0].message.content);
 
     res.status(200).json({ res: json.choices[0].message.content.split('\n') });
