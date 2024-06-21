@@ -77,19 +77,20 @@ const Navbar = () => {
               {dropdownVisible && (
                 <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-xl z-20">
                   <div className="px-4 py-2 flex flex-col items-center">
-                    <img
+                    {/* <img
                       // src={userDetails.profile_picture}
                       src="/profile_pic.svg"
                       alt="Profile Large"
                       className="w-24 h-24 rounded-full"
-                    />
+                    /> */}
+                    <FaUserCircle size="3em" className="" color="#A9A9A9" />
                     <div className="text-sm">{userDetails.fullName}</div>
-                    <div className="text-xs text-gray-500">
+                    {/* <div className="text-xs text-gray-500">
                       Occupation: {userDetails.occupation}
                     </div>
                     <div className="text-xs text-gray-500">
                       Permission: {userDetails.permission || "Edit/Review"}
-                    </div>
+                    </div> */}
                   </div>
                   <div className="px-4 py-2">
                     <div className="text-xs font-bold">Team Members</div>
@@ -120,7 +121,7 @@ const Navbar = () => {
           <>
             {/* Render "Get Registered" if the user is on the canvas page,
             otherwise "Test Around Without Login" */}
-            <Link
+            {/* <Link
               to="/about"
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
@@ -131,7 +132,7 @@ const Navbar = () => {
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
               Contact us
-            </Link>
+            </Link> */}
             {/* User profile dropdown */}
             {isOnCanvas && (
               <div className="relative">
