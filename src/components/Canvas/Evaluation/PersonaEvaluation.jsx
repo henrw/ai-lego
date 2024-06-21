@@ -6,6 +6,8 @@ import { colorClasses } from "../../../contexts/projectContext";
 export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedCardIds, number, cardsData, cardId2number, selectedPersona }) {
     const { user } = useUserAuth();
 
+    const [apiPending, setApiPending] = useState(false);
+
     const togglePanel = () => setIsExpanded(!isExpanded);
     const addEvaluation = useMyStore((store) => store.addEvaluation);
 
@@ -29,6 +31,7 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
     }
 
     const evaluatePersona = async () => {
+        setApiPending(true);
         const response = await fetch("/api/evaluate", {
             method: "POST",
             headers: {
@@ -47,6 +50,7 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
         } else {
             console.error('Failed to fetch:', response.status);
         }
+        setApiPending(false);
     };
 
     return (
@@ -88,7 +92,9 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                                 </button>
                             )
                         }
-
+                        {
+                            apiPending && <p>Generating...</p>
+                        }
                         <div className="mt-3">
                             <textarea
                                 id="persona-eval-textarea"

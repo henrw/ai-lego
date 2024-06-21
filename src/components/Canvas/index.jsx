@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import Card from "./Card";
 import Column from "./Column";
 import { useState } from "react";
@@ -32,6 +32,8 @@ const Canvas = () => {
     setIsModalOpen(false);
   };
 
+  const [apiPending, setApiPending] = useState(false);
+
   const [selectedCardIds, setSelectedCardIds] = useState([]);
 
   const { projectId } = useParams();
@@ -43,11 +45,17 @@ const Canvas = () => {
   const linksPath = "smooth";
 
   const [hovered, setHovered] = useState("");
-  const [hoverY, setHoverY] = useState(0);
 
   const [newPersona, setNewPersona] = useState(false);
   const [candidatePersonas, setCandidatePersonas] = useState([]);
   const [personaInputText, setPersonaInputText] = useState("");
+  const personaInputTextRef = useRef(null);
+
+  const setPersonaInputTextWrapper = (text) => {
+    setPersonaInputText(text);
+    personaInputTextRef.current.style.height = "auto";
+    personaInputTextRef.current.style.height = personaInputTextRef.current.scrollHeight + "px";
+  }
 
   const [isPersonaEvaluationExpanded, setIsPersonaEvaluationExpanded] = useState(false);
   const [isStageEvaluationExpanded, setIsStageEvaluationExpanded] = useState(false);
@@ -69,12 +77,12 @@ const Canvas = () => {
 
   const addPersona = async () => {
     setPersonas([...personas,
-      {
-        imgUrl: personaImgUrls[personaImgIdx],
-        description: personaInputText,
-        isSelected: false
-      }]);
-      console.log(personas);
+    {
+      imgUrl: personaImgUrls[personaImgIdx],
+      description: personaInputText,
+      isSelected: false
+    }]);
+    console.log(personas);
   }
 
   // useEffect(() => {
@@ -99,20 +107,23 @@ const Canvas = () => {
   // }, []); // Empty dependency array means this effect runs once on mount
 
   const generatePersona = async () => {
+    setCandidatePersonas([]);
+    setApiPending(true);
     const response = await fetch("/api/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        existingPersonas: personas
+        existingPersonas: personas,
+        cardsData
       }),
     });
 
     if (response.ok) {
       const data = await response.json();
       setCandidatePersonas(data.res);
-      console.log(data.res);
+      setApiPending(false);
     } else {
       console.error('Failed to fetch:', response.status);
     }
@@ -336,14 +347,14 @@ const Canvas = () => {
 
       <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
 
-      <p className="fixed bottom-[170px] right-6 font-bold text-lg z-30">Evaluation:</p>
+      <p className="fixed bottom-[170px] right-6 font-bold text-lg z-10">Evaluation:</p>
       <ProblemEvaluation isExpanded={isProblemEvaluationExpanded} setIsExpanded={setIsProblemEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
       <StageEvaluation isExpanded={isStageEvaluationExpanded} setIsExpanded={setIsStageEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
       <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} />
 
       <MiniMap />
 
-      <div className={`fixed top-20 ${(isProblemEvaluationExpanded || isStageEvaluationExpanded || isPersonaEvaluationExpanded) ? "right-[400px]" : "right-0"} mb-4 ml-4 z-10`}>
+      <div className={`fixed top-20 ${(isProblemEvaluationExpanded || isStageEvaluationExpanded || isPersonaEvaluationExpanded) ? "right-[400px]" : "right-2"} mb-4 ml-4 z-10`}>
         <div className="flex flex-row">
           <p className="font-bold text-lg mr-2">Personas:</p>
           <div className="ml-auto flex flex-row fixed relative">
@@ -353,8 +364,8 @@ const Canvas = () => {
                   <div className="flex justify-center">
                     <div className="flex p-2 justify-center rounded-full bg-blue-200 w-[100px] h-[100px] relative">
                       <img src={personaImgUrls[personaImgIdx]} alt="persona lego" style={{ "object-fit": "contain" }} className="" />
-                      <svg onClick={()=>{setPersonaImgIdx((personaImgIdx+1)%personaImgUrls.length)}}
-                      className="absolute cursor-pointer bottom-1 right-1" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <svg onClick={() => { setPersonaImgIdx((personaImgIdx + 1) % personaImgUrls.length) }}
+                        className="absolute cursor-pointer bottom-1 right-1" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M17.7274 7.92943C17.2484 6.14165 16.1643 4.57528 14.6598 3.49721C13.1554 2.41914 11.3236 1.89606 9.47677 2.01711C7.62989 2.13816 5.88212 2.89585 4.53125 4.16107C3.18039 5.42629 2.31002 7.12077 2.06843 8.95577C1.82685 10.7908 2.22901 12.6528 3.20638 14.2245C4.18375 15.7963 5.67586 16.9805 7.42848 17.5754C9.1811 18.1704 11.0858 18.1392 12.818 17.4872C14.5502 16.8353 16.0028 15.6029 16.9282 14" stroke="black" stroke-width="2" stroke-linejoin="round" />
                         <path d="M19.0353 4.13629L18 8L14.1363 6.96472" stroke="black" stroke-width="2" stroke-linejoin="round" />
                       </svg>
@@ -363,30 +374,34 @@ const Canvas = () => {
                   </div>
                   <p className="my-2">Describe a stakeholder who might potentially be negatively impacted by the AI product.</p>
                   <textarea
-                    className="no-drag w-full border border-gray-300 p-2 mb-2 rounded"
+                    ref={personaInputTextRef}
+                    className="no-drag w-full border border-gray-300 p-2 mb-2"
                     placeholder="Describe your persona..."
                     value={personaInputText}
-                    onChange={(e) => setPersonaInputText(e.target.value)}
+                    onChange={(e) => setPersonaInputTextWrapper(e.target.value)}
                   />
+                  {
+                    apiPending && <p className="mb-2">Generating...</p>
+                  }
                   {candidatePersonas.length !== 0 && (
                     candidatePersonas.map(item =>
                       <p
-                        onClick={() => { setPersonaInputText(item) }}
+                        onClick={(e) => { setPersonaInputTextWrapper(item) }}
                         className="rounded border border-1 border-gray-100 my-1 p-1 hover:bg-blue-100 cursor-pointer">{item}</p>
                     )
                   )}
                   <div className="flex
                      flex-row">
                     <button
-                      onClick={() => { setNewPersona(false); setPersonaInputText("") }}
+                      onClick={(e) => { setNewPersona(false); setPersonaInputTextWrapper("") }}
                       class="hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 border border-gray-400 rounded inline-flex items-center">
                       Close
                     </button>
                     <button
                       onClick={generatePersona}
-                      type="button" className="ml-auto focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">Help from AI</button>
+                      type="button" className="ml-auto focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">{candidatePersonas.length === 0 ? "G" : "Reg"}enerate with AI</button>
                     <button
-                      onClick={() => { addPersona(); setNewPersona(false) }}
+                      onClick={() => { addPersona(); setPersonaInputTextWrapper(""); setNewPersona(false) }}
                       type="button" className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
                   </div>
                 </div>
@@ -417,39 +432,35 @@ const Canvas = () => {
             <p className="font-bold text-lg">AI LEGO Blocks:</p>
             {
               ["problem", "task", "data", "model", "train", "test", "deploy", "feedback"].map((stage, index) => (
-                <button
-                  key={index}
-                  onClick={() => addCardData(stage)}
-                  onMouseEnter={(e) => {
-                    const rect = e.target.getBoundingClientRect();
-                    const topPosition = rect.top + window.pageYOffset;
-                    setHovered(stage);
-                    setHoverY(topPosition);
-                  }}
-                  onMouseLeave={() => {
-                    setHovered("");
-                  }}
-                  className={`w-[90px] p-1 my-1 ${stage === 'problem' ? 'bg-problem' :
-                    stage === 'task' ? 'bg-task' :
-                      stage === 'data' ? 'bg-data' :
-                        stage === 'model' ? 'bg-model' :
-                          stage === 'train' ? 'bg-train' :
-                            stage === 'test' ? 'bg-test' :
-                              stage === 'deploy' ? 'bg-deploy' :
-                                stage === 'feedback' ? 'bg-feedback' : 'bg-default'
-                    }`}
-                >
-                  {stage.charAt(0).toUpperCase() + stage.slice(1)}
-                </button>
+                <div className="relative">
+                  <button
+                    key={index}
+                    onClick={() => addCardData(stage)}
+                    onMouseEnter={(e) => {
+                      setHovered(stage);
+                    }}
+                    onMouseLeave={() => {
+                      setHovered("");
+                    }}
+                    className={`w-[90px] p-1 my-1 ${stage === 'problem' ? 'bg-problem' :
+                      stage === 'task' ? 'bg-task' :
+                        stage === 'data' ? 'bg-data' :
+                          stage === 'model' ? 'bg-model' :
+                            stage === 'train' ? 'bg-train' :
+                              stage === 'test' ? 'bg-test' :
+                                stage === 'deploy' ? 'bg-deploy' :
+                                  stage === 'feedback' ? 'bg-feedback' : 'bg-default'
+                      }`}
+                  >
+                    {stage.charAt(0).toUpperCase() + stage.slice(1)}
+                  </button>
+                  <div
+                    className={`absolute h-min ${index===7?"w-[500px]":"w-[300px]"} bg-black text-white text-left pl-2 left-[90px] transform -translate-y-[36px] z-[30] transition-opacity duration-300 whitespace-pre-wrap ${hovered === stage ? "visible opacity-100" : "invisible opacity-0"}`}>
+                    {prompts[hovered]}
+                  </div>
+                </div>
               ))
             }
-          </div>
-          <div
-            className={`h-min w-[300px] bg-black text-white text-left pl-2 fixed left-[110px] z-[1001] transition-opacity duration-300 whitespace-pre-wrap ${hovered !== "" ? "visible opacity-100" : "invisible opacity-0"}`}
-            style={{
-              top: `${hoverY}px`
-            }}>
-            {prompts[hovered]}
           </div>
         </div>
       </div>

@@ -22,12 +22,11 @@ function PersonaIcon({ imgUrl, description, isSelected, toggleFunction, idx }) {
             }
             {
                 showEvaluation &&
-                <div className='right-0 bottom-0 absolute transform translate-y-[100%] w-[300px] bg-white p-2 border border-1'>
+                <div className='right-0 bottom-0 absolute transform translate-y-[100%] w-[400px] bg-white p-2 border border-1'>
                     {(evaluationData.map((evaluation, idx) => (<>
                         <EvaluationBox evaluationData={evaluation} />
                         {idx !== evaluationData.length-1 && <div className='border-b-0.5 border'></div>} 
                     </>
-                        
                     )))}
                 </div>
             }
