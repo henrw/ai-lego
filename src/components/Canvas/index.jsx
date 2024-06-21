@@ -455,7 +455,7 @@ const Canvas = () => {
                     {stage.charAt(0).toUpperCase() + stage.slice(1)}
                   </button>
                   <div
-                    className={`absolute h-min ${index===7?"w-[500px]":"w-[300px]"} bg-black text-white text-left pl-2 left-[90px] transform -translate-y-[36px] z-[30] transition-opacity duration-300 whitespace-pre-wrap ${hovered === stage ? "visible opacity-100" : "invisible opacity-0"}`}>
+                    className={`absolute text-sm h-min ${index===7?"w-[500px]":"w-[300px]"} bg-black text-white text-left pl-2 left-[90px] transform -translate-y-[36px] z-[30] transition-opacity duration-300 whitespace-pre-wrap ${hovered === stage ? "visible opacity-100" : "invisible opacity-0"}`}>
                     {prompts[hovered]}
                   </div>
                 </div>

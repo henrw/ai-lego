@@ -293,7 +293,7 @@ const Home = () => {
             <div className="font-bold text-2xl">
               Projects
             </div>
-            <button className="ml-auto text-xl rounded p-2 text-white" style={{ backgroundColor: "#b063c5" }}
+            <button className="ml-auto text-md rounded p-2 text-white" style={{ backgroundColor: "#b063c5" }}
               onClick={createProject}>
               + New Project
             </button>

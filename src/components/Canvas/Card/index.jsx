@@ -188,7 +188,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
         <div className="grow-1">
           <div className={`flex flex-row justify-between items-center ${bgColorClass} px-2 py-2 text-lg font-mono font-bold`}>
             <div className="flex flex-row">
-              <div onMouseOver={() => setShowPrompt(true)} onMouseOut={() => setShowPrompt(false)}>{stageName}#{number}</div>
+              <div onMouseOver={() => setShowPrompt(true)} onMouseOut={() => setShowPrompt(false)}>{stageName}</div>
               {
                 (evaluationData.length) !== 0 && (
                   <button className="ml-1 text-white"
