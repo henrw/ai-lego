@@ -286,7 +286,8 @@ const Canvas = () => {
   return (
     <>
       {/* // <div className="flex flex-row "> */}
-      <div id="canvas" style={{ width: `${canvasScale.x * 100}vw`, height: `${canvasScale.y * 100}vh`, paddingTop: '4rem', position: 'relative' }} className="sketchbook-background">
+      <div onClick={()=>{setSelectedCardIds([]);}}
+      id="canvas" style={{ width: `${canvasScale.x * 100}vw`, height: `${canvasScale.y * 100}vh`, paddingTop: '4rem', position: 'relative' }} className="sketchbook-background">
 
         {cardsData.map((card) => {
           if (card.stage in stage2number) {
@@ -429,6 +430,15 @@ const Canvas = () => {
       <div className="fixed bottom-0 left-0 mb-4 ml-4 z-10">
         <div className="flex flex-row">
           <div className="flex flex-col">
+            <div className="relative mb-[1000px]">
+                <button
+                  key="note-button"
+                  onClick={() => addCardData("note")}
+                  className={`w-[90px] p-1 my-1 bg-gray-200`}
+                >
+                  {"note".charAt(0).toUpperCase() + "note".slice(1)}
+                </button>
+              </div>
             <p className="font-bold text-lg">AI LEGO Blocks:</p>
             {
               ["problem", "task", "data", "model", "train", "test", "deploy", "feedback"].map((stage, index) => (

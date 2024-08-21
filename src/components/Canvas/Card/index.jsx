@@ -95,6 +95,9 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
     textArea.style.height = textArea.scrollHeight + 'px';
   }, []);
 
+  const lastX = null;
+  const lastY = null;
+
   const { user } = useUserAuth();
   const borderColorClass = getBorderColorClassFromId(id);
   const bgColorClass = getBgColorClassFromId(stage);
@@ -161,7 +164,6 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
       position={cardData.position}
       onDrag={(e) => {
         refreshLinks();
-
         // if (window.scrollX + e.clientX >= document.documentElement.scrollWidth - 50) {
         extendCanvasRight();
         // }
@@ -172,11 +174,11 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
       cancel=".no-drag"
     >
       <div
-        className={`absolute z-1 text-sm flex flex-col justify-center w-60 bg-white shadow ${selectedCardIds.includes(id) ? "outline outline-4 outline-blue-400" : ""}`} // w-96 for fixed width
+        className={`absolute z-1 text-sm flex flex-col justify-center ${stageName!=="Note"? "w-60" : "w-[700px]"} bg-white shadow ${selectedCardIds.includes(id) ? "outline outline-4 outline-blue-400" : ""}`} // w-96 for fixed width
         id={id}
         ref={cardRef}
         style={{ paddingBottom: "0" }}
-        onClick={() => { changeSelectedCardIds(id); setSelected(!selected) }}
+        onClick={(e) => { changeSelectedCardIds(id); setSelected(!selected); e.stopPropagation();}}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
           if (e.dataTransfer.getData("arrow") != id) {
@@ -236,8 +238,12 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
         </div>
 
         <div className="relative">
-          <ConnectPointsWrapper {...{ id, dragRef, cardRef }} />
-          <div id={id + "-right"} className="absolute right-0 top-[20px] transform translate-x-[50%] z-0">
+          {
+            stageName !== "Note" &&
+            <>
+            <ConnectPointsWrapper {...{ id, dragRef, cardRef }} />
+
+            <div id={id + "-right"} className="absolute right-0 top-[20px] transform translate-x-[50%] z-0">
             <svg className="w-5 h-5" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="20" cy="20" r="20" fill="white" />
               <circle cx="20" cy="20" r="10" fill="black" />
@@ -245,9 +251,13 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
           </div>
           <div id={id + "-left"} className="absolute left-0 h-6 top-[20px] transform z-0">
           </div>
+            </>
+          }
+          
+          
           <textarea
             id={id + "-textarea"}
-            className="no-drag p-2 w-60 outline-none text-md"
+            className={`no-drag p-2 ${stageName!=="Note"? "w-60" : "w-[700px]"} outline-none text-md`}
             style={{ resize: "none", minHeight: '40px', height: 'auto', draggable: 'false' }}
             onClick={(event) => { event.stopPropagation(); }}
             onChange={(e) => setTextWrapper(e.target.value)}
