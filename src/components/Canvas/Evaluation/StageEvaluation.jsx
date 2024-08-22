@@ -18,7 +18,7 @@ export default function StageEvaluation({isExpanded, setIsExpanded, selectedCard
 
     const stage2prompt = {
         problem: "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
-        tasks: "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+        task: "What are the boundaries and limitations of what the AI solution is expected to achieve?",
         data: "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
         model: "Is the choice of models, proxities, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
         train: "Can you think of ways the training process might go wrong? If so, how?",
