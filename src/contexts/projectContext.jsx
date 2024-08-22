@@ -312,6 +312,7 @@ const myStore = (set) => ({
   },
 
   addEvaluation: async (username, selectedCardIds, report) => {
+    if (username === undefined || username === null) username = "Anonymous";
     const { projectId } = useMyStore.getState();
     if (projectId == null) {
       throw new Error("null projectId");

@@ -351,12 +351,12 @@ const Canvas = () => {
       <p className="fixed bottom-[170px] right-6 font-bold text-lg z-10">Evaluation:</p>
       <ProblemEvaluation isExpanded={isProblemEvaluationExpanded} setIsExpanded={setIsProblemEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
       <StageEvaluation isExpanded={isStageEvaluationExpanded} setIsExpanded={setIsStageEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
-      {/* <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} /> */}
+      <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} />
 
       <MiniMap />
 
       <div className={`fixed top-20 ${(isProblemEvaluationExpanded || isStageEvaluationExpanded || isPersonaEvaluationExpanded) ? "right-[400px]" : "right-2"} mb-4 ml-4 z-10`}>
-        {/* <div className="flex flex-row">
+        <div className="flex flex-row">
           <p className="font-bold text-lg mr-2">Personas:</p>
           <div className="ml-auto flex flex-row fixed relative">
             {
@@ -408,15 +408,15 @@ const Canvas = () => {
                 </div>
             }
           </div>
-        </div> */}
-        {/* <div className="flex flex-row justify-end">
+        </div>
+        <div className="flex flex-row justify-end">
           {
             personas.map((persona, index) => (
               <PersonaIcon imgUrl={persona.imgUrl} description={persona.description} isSelected={persona.isSelected} toggleFunction={togglePersonaSelection} idx={index} />
             ))
           }
 
-        </div> */}
+        </div>
       </div>
 
       <div className="fixed bottom-0 left-0 mb-4 ml-4 z-10">
