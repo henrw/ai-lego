@@ -189,7 +189,7 @@ export default function IssueEvaluation({isExpanded, setIsExpanded, selectedCard
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { type: "problem", problem: problemText, stakeholder: stakeholderText, impact: [impactText, degreeOfImpact].join('-'), open: openText }); resetTextInput(); setIsExpanded(); }}>
+                            onClick={() => { addEvaluation(user.displayName || "Anonymous", selectedCardIds, { type: "problem", problem: problemText, stakeholder: stakeholderText, impact: [impactText, degreeOfImpact].join('-'), open: openText }); resetTextInput(); setIsExpanded(); }}>
                             Submit
                         </button>
                     </>

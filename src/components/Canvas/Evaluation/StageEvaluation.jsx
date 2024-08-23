@@ -82,7 +82,7 @@ export default function StageEvaluation({isExpanded, setIsExpanded, selectedCard
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName, selectedCardIds, { type: "stage", problem: problemText, }); resetTextInput(); setIsExpanded(); }}>
+                            onClick={() => { addEvaluation(user.displayName || "Anonymous", selectedCardIds, { type: "stage", problem: problemText, }); resetTextInput(); setIsExpanded(); }}>
                             Submit
                         </button>
                     </>
