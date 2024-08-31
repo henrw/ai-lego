@@ -80,13 +80,13 @@ const Login = () => {
           />
         </div> */}
 
-        <div className="text-center mt-3">
+        {/* <div className="text-center mt-3">
           Don't have an account?{" "}
           <Link to="/signup" className="text-blue-500">
             {" "}
             Join for Free
           </Link>
-        </div>
+        </div> */}
       </div>
     </div>
   );
