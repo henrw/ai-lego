@@ -349,7 +349,7 @@ const Canvas = () => {
       <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
 
       <p className="fixed bottom-[170px] right-6 font-bold text-lg z-10">Evaluation:</p>
-      <ProblemEvaluation isExpanded={isProblemEvaluationExpanded} setIsExpanded={setIsProblemEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
+      {/* <ProblemEvaluation isExpanded={isProblemEvaluationExpanded} setIsExpanded={setIsProblemEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} /> */}
       <StageEvaluation isExpanded={isStageEvaluationExpanded} setIsExpanded={setIsStageEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
       <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} />
 
