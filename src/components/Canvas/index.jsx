@@ -348,7 +348,7 @@ const Canvas = () => {
 
       <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
 
-      <p className="fixed bottom-[170px] right-6 font-bold text-lg z-10">Evaluation:</p>
+      <p className="fixed bottom-[125px] right-6 font-bold text-lg z-10">Evaluation:</p>
       {/* <ProblemEvaluation isExpanded={isProblemEvaluationExpanded} setIsExpanded={setIsProblemEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} /> */}
       <StageEvaluation isExpanded={isStageEvaluationExpanded} setIsExpanded={setIsStageEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
       <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} />
@@ -431,7 +431,7 @@ const Canvas = () => {
                   {"note".charAt(0).toUpperCase() + "note".slice(1)}
                 </button>
               </div>
-            <p className="font-bold text-lg">AI LEGO Blocks:</p>
+            <p className="font-bold text-lg mb-2">AI LEGO Blocks:</p>
             {
               ["problem", "task", "data", "model", "train", "test", "deploy", "feedback"].map((stage, index) => (
                 <div className="relative">
