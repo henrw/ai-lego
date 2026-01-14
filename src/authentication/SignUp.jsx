@@ -1,7 +1,6 @@
 // SignUp.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Button } from "react-bootstrap";
 import { useUserAuth } from "./UserAuthContext";
 import { db } from "../firebase"; // Ensure you have this import
 import { doc, setDoc } from "firebase/firestore"; // Import Firestore document set function

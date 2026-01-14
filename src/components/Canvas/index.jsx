@@ -1,11 +1,9 @@
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef } from "react";
 import Card from "./Card";
-import Column from "./Column";
 import { useState } from "react";
-import useMyStore, { prompts, colorClasses } from "../../contexts/projectContext";
+import useMyStore, { prompts } from "../../contexts/projectContext";
 import Xarrow from "react-xarrows";
 import { useParams, useLocation } from 'react-router-dom';
-import ProblemEvaluation from "./Evaluation/ProblemEvaluation";
 import StageEvaluation from "./Evaluation/StageEvaluation";
 import PersonaEvaluation from "./Evaluation/PersonaEvaluation";
 import CollaboratorModal from "./CollaboratorModal";
@@ -18,7 +16,7 @@ import PersonaIcon from './Persona';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { db, storage } from "../../firebase"; // Ensure you have this import
-import { doc, getDoc, updateDoc, addDoc, deleteDoc, collection, arrayUnion, arrayRemove, query, where, getDocs, serverTimestamp } from "firebase/firestore"; // Import Firestore document update functions
+import { doc, updateDoc, arrayUnion } from "firebase/firestore"; // Import Firestore document update functions
 
 const Canvas = () => {
 
@@ -33,6 +31,9 @@ const Canvas = () => {
   };
 
   const [apiPending, setApiPending] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamedPersonaText, setStreamedPersonaText] = useState("");
+  const personaAbortRef = useRef(null);
 
   const [selectedCardIds, setSelectedCardIds] = useState([]);
 
@@ -59,9 +60,10 @@ const Canvas = () => {
 
   const [isPersonaEvaluationExpanded, setIsPersonaEvaluationExpanded] = useState(false);
   const [isStageEvaluationExpanded, setIsStageEvaluationExpanded] = useState(false);
-  const [isProblemEvaluationExpanded, setIsProblemEvaluationExpanded] = useState(false);
+  const [isProblemEvaluationExpanded] = useState(false);
 
   const [personas, setPersonas] = useState([]);
+  const [lastSelectedPersonaIndex, setLastSelectedPersonaIndex] = useState(null);
 
   const [personaImgIdx, setPersonaImgIdx] = useState(0);
   const personaImgUrls = [
@@ -106,26 +108,110 @@ const Canvas = () => {
   //     });
   // }, []); // Empty dependency array means this effect runs once on mount
 
-  const generatePersona = async () => {
-    setCandidatePersonas([]);
-    setApiPending(true);
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        existingPersonas: personas,
-        cardsData
-      }),
-    });
+  const removeEnumerators = (text) => text.replace(/^\d+\.\s+|^\-\s+/gm, "");
 
-    if (response.ok) {
-      const data = await response.json();
-      setCandidatePersonas(data.res);
+  const parsePersonasFromXml = (text) => {
+    const matches = [...text.matchAll(/<persona>([\s\S]*?)<\/persona>/g)];
+    if (matches.length === 0) {
+      return [];
+    }
+    return matches
+      .map((match) => match[1].replace(/<[^>]+>/g, "").trim())
+      .filter((item) => item !== "");
+  };
+
+  const finalizePersonaCandidates = (text) => {
+    const parsed = parsePersonasFromXml(text);
+    const cleaned = parsed.length > 0
+      ? parsed
+      : removeEnumerators(text)
+          .split("\n")
+          .map((item) => item.trim())
+          .filter((item) => item !== "");
+    setCandidatePersonas(cleaned);
+  };
+
+  const stopPersonaGeneration = () => {
+    if (personaAbortRef.current) {
+      personaAbortRef.current.abort();
+      personaAbortRef.current = null;
+    }
+    setIsStreaming(false);
+    setApiPending(false);
+  };
+
+  const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "";
+
+  const generatePersona = async () => {
+    if (apiPending) return;
+    setCandidatePersonas([]);
+    setStreamedPersonaText("");
+    setApiPending(true);
+    setIsStreaming(false);
+    const controller = new AbortController();
+    personaAbortRef.current = controller;
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/generate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          existingPersonas: personas,
+          cardsData,
+        }),
+        signal: controller.signal,
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+      if (response.ok && contentType.includes("text/event-stream") && response.body) {
+        setIsStreaming(true);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let fullText = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const events = buffer.split("\n\n");
+          buffer = events.pop() || "";
+          for (const event of events) {
+            const line = event.split("\n").find((entry) => entry.startsWith("data: "));
+            if (!line) continue;
+            const chunk = line.replace("data: ", "");
+            if (chunk === "[DONE]") {
+              finalizePersonaCandidates(fullText);
+              setIsStreaming(false);
+              setApiPending(false);
+              return;
+            }
+            fullText += chunk;
+            setStreamedPersonaText((prev) => prev + chunk);
+          }
+        }
+        finalizePersonaCandidates(fullText);
+        setIsStreaming(false);
+        setApiPending(false);
+        return;
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        setCandidatePersonas(data.res);
+      } else {
+        console.error("Failed to fetch:", response.status);
+      }
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Failed to fetch:", error);
+      }
+    } finally {
       setApiPending(false);
-    } else {
-      console.error('Failed to fetch:', response.status);
+      setIsStreaming(false);
+      personaAbortRef.current = null;
     }
   };
 
@@ -135,7 +221,6 @@ const Canvas = () => {
   const projectName = useMyStore((store) => store.projectName);
   const links = useMyStore((store) => store.links);
 
-  const addTemplate = useMyStore((store) => store.addTemplate);
   const canvasScale = useMyStore((store) => store.canvasScale);
   const addCardData = useMyStore((store) => store.addCardData);
   const pullProject = useMyStore((store) => store.pullProject);
@@ -153,7 +238,7 @@ const Canvas = () => {
   let cardId2number = {}
 
 
-  const addCollaborator = async () => {
+  const addCollaborator = useCallback(async () => {
     console.log(user?.uid);
     try {
       const userId = user?.uid;
@@ -174,13 +259,13 @@ const Canvas = () => {
     } catch (error) {
       console.error("Error getting documents: ", error);
     }
-  };
+  }, [projectId, user?.uid]);
 
   useEffect(() => {
     cleanStore(projectId);
     pullProject(projectId);
 
-    if (usp == "sharing") addCollaborator();
+    if (usp === "sharing") addCollaborator();
     const handleKeyDown = (event) => {
       if (event.key === 'Shift') {
         setIsShiftPressed(true);
@@ -201,7 +286,7 @@ const Canvas = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [pullProject, projectId]);
+  }, [addCollaborator, cleanStore, pullProject, projectId, usp]);
 
 
   const changeSelectedCardIds = (cardId) => {
@@ -231,28 +316,29 @@ const Canvas = () => {
   }
 
   function togglePersonaSelection(idx) {
-    const newPersonas = [...personas];
-    newPersonas.forEach((persona, i) => { if (idx !== i) { persona.isSelected = false } });
-    newPersonas[idx].isSelected = !newPersonas[idx].isSelected;
+    const newPersonas = personas.map((persona, i) => ({
+      ...persona,
+      isSelected: i === idx ? !persona.isSelected : false,
+    }));
+    if (newPersonas[idx].isSelected) {
+      setLastSelectedPersonaIndex(idx);
+    }
     setPersonas(newPersonas);
   }
 
-  async function saveImageToFirestore(imageDataURL) {
-    const blob = dataURLtoBlob(imageDataURL);
-    const downloadUrl = await uploadImageToStorage(blob, `project_snapshots/${projectId}.png`); // _${Date.now() Upload the image to Firebase Storage
-
-    await updateDoc(doc(db, "projects", projectId), {
-      snapshotUrl: downloadUrl,
-    })
-      .then(() => console.log("Document successfully written!"))
-      .catch(error => console.error("Error writing document: ", error));
-  }
-
-  function saveSnapshot() {
-    captureElement().then(imageDataURL => {
-      saveImageToFirestore(imageDataURL);
-    })
-  }
+  useEffect(() => {
+    if (!isPersonaEvaluationExpanded) return;
+    if (personas.length === 0) return;
+    if (personas.some((persona) => persona.isSelected)) return;
+    if (lastSelectedPersonaIndex === null) return;
+    if (!personas[lastSelectedPersonaIndex]) return;
+    setPersonas((prev) =>
+      prev.map((persona, i) => ({
+        ...persona,
+        isSelected: i === lastSelectedPersonaIndex,
+      }))
+    );
+  }, [isPersonaEvaluationExpanded, lastSelectedPersonaIndex, personas]);
 
   function dataURLtoBlob(dataurl) {
     const arr = dataurl.split(',');
@@ -266,7 +352,7 @@ const Canvas = () => {
     return new Blob([u8arr], { type: mime });
   }
 
-  const uploadImageToStorage = (fileBlob, path) => {
+  const uploadImageToStorage = useCallback((fileBlob, path) => {
     const storageRef = ref(storage, path);
     return uploadBytes(storageRef, fileBlob)
       .then((snapshot) => getDownloadURL(snapshot.ref))
@@ -274,12 +360,29 @@ const Canvas = () => {
         console.log("File available at", downloadURL);
         return downloadURL; // Return the URL to use it for saving in Firestore or other needs
       });
-  };
+  }, []);
+
+  const saveImageToFirestore = useCallback(async (imageDataURL) => {
+    const blob = dataURLtoBlob(imageDataURL);
+    const downloadUrl = await uploadImageToStorage(blob, `project_snapshots/${projectId}.png`); // _${Date.now() Upload the image to Firebase Storage
+
+    await updateDoc(doc(db, "projects", projectId), {
+      snapshotUrl: downloadUrl,
+    })
+      .then(() => console.log("Document successfully written!"))
+      .catch(error => console.error("Error writing document: ", error));
+  }, [projectId, uploadImageToStorage]);
+
+  const saveSnapshot = useCallback(() => {
+    captureElement().then((imageDataURL) => {
+      saveImageToFirestore(imageDataURL);
+    });
+  }, [saveImageToFirestore]);
   useEffect(() => {
     if (cardsData.length !== 0) {
       saveSnapshot();
     }
-  }, [cardsData]);
+  }, [cardsData, saveSnapshot]);
 
   if (loading) return <div></div>;
 
@@ -333,11 +436,12 @@ const Canvas = () => {
       <div className="flex flex-row fixed top-20 left-4 z-10">
         <input
           type="text"
-          className="p-2 border-2"
+          className="py-2 pl-2 pr-1 border-2"
           value={projectName}
           onChange={(e) => setProjectName(e.target.value)}
           onBlur={() => { }} // TODO optimize firebase update if necessary
           placeholder="Enter Project Name"
+          size={Math.min(Math.max(projectName.length, 16), 60)}
         />
         <button
           onClick={openModal}
@@ -360,52 +464,7 @@ const Canvas = () => {
           <p className="font-bold text-lg mr-2">Personas:</p>
           <div className="ml-auto flex flex-row fixed relative">
             {
-              !newPersona ? <button type="button" onClick={() => { setNewPersona(true) }} className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-1 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Create</button> :
-                <div className="bg-white p-3 z-30 w-[500px] border border-1 border-gray absolute right-0">
-                  <div className="flex justify-center">
-                    <div className="flex p-2 justify-center rounded-full bg-blue-200 w-[100px] h-[100px] relative">
-                      <img src={personaImgUrls[personaImgIdx]} alt="persona lego" style={{ "object-fit": "contain" }} className="" />
-                      <svg onClick={() => { setPersonaImgIdx((personaImgIdx + 1) % personaImgUrls.length) }}
-                        className="absolute cursor-pointer bottom-1 right-1" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.7274 7.92943C17.2484 6.14165 16.1643 4.57528 14.6598 3.49721C13.1554 2.41914 11.3236 1.89606 9.47677 2.01711C7.62989 2.13816 5.88212 2.89585 4.53125 4.16107C3.18039 5.42629 2.31002 7.12077 2.06843 8.95577C1.82685 10.7908 2.22901 12.6528 3.20638 14.2245C4.18375 15.7963 5.67586 16.9805 7.42848 17.5754C9.1811 18.1704 11.0858 18.1392 12.818 17.4872C14.5502 16.8353 16.0028 15.6029 16.9282 14" stroke="black" stroke-width="2" stroke-linejoin="round" />
-                        <path d="M19.0353 4.13629L18 8L14.1363 6.96472" stroke="black" stroke-width="2" stroke-linejoin="round" />
-                      </svg>
-
-                    </div>
-                  </div>
-                  <p className="my-2">Describe a stakeholder who might potentially be negatively impacted by the AI product.</p>
-                  <textarea
-                    ref={personaInputTextRef}
-                    className="no-drag w-full border border-gray-300 p-2 mb-2"
-                    placeholder="Describe your persona..."
-                    value={personaInputText}
-                    onChange={(e) => setPersonaInputTextWrapper(e.target.value)}
-                  />
-                  {
-                    apiPending && <p className="mb-2">Generating...</p>
-                  }
-                  {candidatePersonas.length !== 0 && (
-                    candidatePersonas.map(item =>
-                      <p
-                        onClick={(e) => { setPersonaInputTextWrapper(item) }}
-                        className="rounded border border-1 border-gray-100 my-1 p-1 hover:bg-blue-100 cursor-pointer">{item}</p>
-                    )
-                  )}
-                  <div className="flex
-                     flex-row">
-                    <button
-                      onClick={(e) => { setNewPersona(false); setPersonaInputTextWrapper("") }}
-                      class="hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 border border-gray-400 rounded inline-flex items-center">
-                      Close
-                    </button>
-                    <button
-                      onClick={generatePersona}
-                      type="button" className="ml-auto focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900">{candidatePersonas.length === 0 ? "G" : "Reg"}enerate with AI</button>
-                    <button
-                      onClick={() => { addPersona(); setPersonaInputTextWrapper(""); setNewPersona(false) }}
-                      type="button" className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Save</button>
-                  </div>
-                </div>
+              !newPersona ? <button type="button" onClick={() => { setNewPersona(true) }} className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-2 py-1 me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800">Create</button> : null
             }
           </div>
         </div>
@@ -419,10 +478,104 @@ const Canvas = () => {
         </div>
       </div>
 
+      {newPersona && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-4xl max-h-[85vh] overflow-y-auto rounded-xl bg-white p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">Create Persona</h3>
+              <button
+                onClick={() => { setNewPersona(false); setPersonaInputTextWrapper(""); }}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Close persona dialog"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-6 h-6">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="mt-5 flex justify-center">
+              <div className="flex p-2 justify-center rounded-full bg-blue-200 w-[120px] h-[120px] relative">
+                <img src={personaImgUrls[personaImgIdx]} alt="persona lego" style={{ objectFit: "contain" }} className="" />
+                <svg onClick={() => { setPersonaImgIdx((personaImgIdx + 1) % personaImgUrls.length) }}
+                  className="absolute cursor-pointer bottom-1 right-1" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M17.7274 7.92943C17.2484 6.14165 16.1643 4.57528 14.6598 3.49721C13.1554 2.41914 11.3236 1.89606 9.47677 2.01711C7.62989 2.13816 5.88212 2.89585 4.53125 4.16107C3.18039 5.42629 2.31002 7.12077 2.06843 8.95577C1.82685 10.7908 2.22901 12.6528 3.20638 14.2245C4.18375 15.7963 5.67586 16.9805 7.42848 17.5754C9.1811 18.1704 11.0858 18.1392 12.818 17.4872C14.5502 16.8353 16.0028 15.6029 16.9282 14" stroke="black" strokeWidth="2" strokeLinejoin="round" />
+                  <path d="M19.0353 4.13629L18 8L14.1363 6.96472" stroke="black" strokeWidth="2" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+            <p className="my-4 text-sm text-gray-700">
+              Describe a stakeholder who might potentially be negatively impacted by the AI product.
+            </p>
+            <textarea
+              ref={personaInputTextRef}
+              className="no-drag w-full border border-gray-300 p-3 mb-3 text-sm"
+              placeholder="Describe your persona..."
+              value={personaInputText}
+              onChange={(e) => setPersonaInputTextWrapper(e.target.value)}
+            />
+            {apiPending && (
+              <p className="mb-2 text-sm text-gray-500">
+                Generating personas... you can keep editing while this runs.
+              </p>
+            )}
+            {isStreaming && streamedPersonaText !== "" && (
+              <div className="mb-3 max-h-56 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-3 text-xs whitespace-pre-wrap">
+                {streamedPersonaText}
+              </div>
+            )}
+            {candidatePersonas.length !== 0 && (
+              <div>
+                {candidatePersonas.map(item => (
+                  <p
+                    key={item}
+                    onClick={() => { setPersonaInputTextWrapper(item); }}
+                    className="rounded border border-gray-100 my-1 p-1 text-xs hover:bg-blue-100 cursor-pointer"
+                  >
+                    {item}
+                  </p>
+                ))}
+              </div>
+            )}
+            <div className="mt-3 flex flex-row">
+              <button
+                onClick={() => { setNewPersona(false); setPersonaInputTextWrapper(""); }}
+                className="hover:bg-gray-100 text-gray-800 font-medium rounded-lg text-sm px-4 py-2.5 border border-gray-400"
+              >
+                Close
+              </button>
+              <button
+                onClick={generatePersona}
+                type="button"
+                disabled={apiPending}
+                className="ml-auto focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-4 py-2.5 disabled:opacity-60 disabled:cursor-not-allowed dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900"
+              >
+                {apiPending ? "Generating..." : `${candidatePersonas.length === 0 ? "G" : "Reg"}enerate with AI`}
+              </button>
+              {apiPending && (
+                <button
+                  onClick={stopPersonaGeneration}
+                  type="button"
+                  className="ml-2 text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none font-medium rounded-lg text-sm px-4 py-2.5"
+                >
+                  Stop
+                </button>
+              )}
+              <button
+                onClick={() => { addPersona(); setPersonaInputTextWrapper(""); setNewPersona(false) }}
+                type="button"
+                className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="fixed bottom-0 left-0 mb-4 ml-4 z-10">
         <div className="flex flex-row">
           <div className="flex flex-col">
-            <div className="relative mb-[1000px]">
+            {/* <div className="relative mb-[1000px]">
                 <button
                   key="note-button"
                   onClick={() => addCardData("note")}
@@ -430,7 +583,7 @@ const Canvas = () => {
                 >
                   {"note".charAt(0).toUpperCase() + "note".slice(1)}
                 </button>
-              </div>
+              </div> */}
             <p className="font-bold text-lg mb-2">AI LEGO Blocks:</p>
             {
               ["problem", "task", "data", "model", "train", "test", "deploy", "feedback"].map((stage, index) => (

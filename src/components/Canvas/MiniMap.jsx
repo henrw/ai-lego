@@ -1,4 +1,4 @@
-import useMyStore, { prompts, colorClasses } from "../../contexts/projectContext";
+import useMyStore, { colorClasses } from "../../contexts/projectContext";
 import { useState } from "react";
 
 export default function MiniMap() {

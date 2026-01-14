@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore from "../../../contexts/projectContext";
 import { colorClasses } from "../../../contexts/projectContext";
@@ -9,7 +9,6 @@ export default function StageEvaluation({isExpanded, setIsExpanded, selectedCard
 
     const togglePanel = () => setIsExpanded(!isExpanded);
     const [problemText, setProblemText] = useState("");
-    const [promptText, setPromptText] = useState("");
     const addEvaluation = useMyStore((store) => store.addEvaluation);
 
     const resetTextInput = () => {

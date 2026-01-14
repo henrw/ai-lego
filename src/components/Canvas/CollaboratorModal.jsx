@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import useMyStore from "../../contexts/projectContext";
 import { db } from "../../firebase"; // Ensure you have this import
-import { doc, getDoc, updateDoc, addDoc, collection, arrayUnion, query, where, getDocs, serverTimestamp, deleteDoc } from "firebase/firestore"; // Import Firestore document update functions
+import { doc, updateDoc, collection, arrayUnion, query, where, getDocs } from "firebase/firestore"; // Import Firestore document update functions
 
 function CollaboratorModal({ isOpen, onClose }) {
     const projectId = useMyStore((store) => store.projectId);

@@ -1,6 +1,6 @@
 // ProfileModal.jsx
 import React from "react";
-import { Modal, Button } from "react-bootstrap";
+import { Modal } from "react-bootstrap";
 import { FaUserCircle } from "react-icons/fa";
 
 const ProfileModal = ({

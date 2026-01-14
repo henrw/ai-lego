@@ -1,10 +1,8 @@
-import React, { useRef, useState, useEffect } from "react";
+import React from "react";
 
 export default function EvaluationBox({ evaluationData }) {
-    console.log(evaluationData)
-    const { by, time, profileImg, problem, type, value, stakeholder, impact, open } = evaluationData;
-
-    const [dropdownState, setDropdownState] = useState(false);
+    console.log(evaluationData);
+    const { by, problem, type, stakeholder, impact, open } = evaluationData;
     return (
         <div className="flex items-start mb-2">
             <div className="flex flex-col w-full leading-1.5">
@@ -15,7 +13,7 @@ export default function EvaluationBox({ evaluationData }) {
                     {
                         type !== "persona" && (
                             <div className="flex flex-row items-center">
-                                <img className="w-8 h-8 rounded-full" src="/profile-pic.png" alt="Jese image" />
+                                <img className="w-8 h-8 rounded-full" src="/profile-pic.png" alt="Jese" />
                                 <span className="ml-2">{by}</span>
                                 <span className="text-gray-500 ml-auto">{type}-wise</span>
                             </div>

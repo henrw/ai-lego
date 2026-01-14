@@ -235,7 +235,7 @@ const Home = () => {
   };
 
   const deleteProject = async (projectId) => {
-    const newProjectsInfo = projectsInfo.filter(project => project.uid != projectId);
+    const newProjectsInfo = projectsInfo.filter(project => project.uid !== projectId);
     setProjectsInfo(newProjectsInfo);
     try {
       await deleteDoc(doc(db, "projects", projectId));
@@ -298,6 +298,9 @@ const Home = () => {
               + New Project
             </button>
           </div>
+          <p className="text-sm text-gray-500 mb-3">
+            Project data will be shared publicly in the testing mode.
+          </p>
 
           <Row className="mb-4">
             {/* Map through projects and create a card for each */}

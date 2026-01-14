@@ -3,13 +3,8 @@ import Draggable from "react-draggable";
 import Xarrow from "react-xarrows";
 import useMyStore, { colorClasses } from "../../../contexts/projectContext";
 import { shallow } from "zustand/shallow";
-import Popup from "reactjs-popup";
-import { v4 as uuidv4 } from "uuid";
-import { FaSave } from "react-icons/fa";
-import { FaEdit } from "react-icons/fa";
 import MessageBox from "./Message";
 import EvaluationBox from "./Evaluation";
-import { useUserAuth } from "../../../authentication/UserAuthContext";
 
 const ConnectPointsWrapper = ({ id, dragRef, cardRef }) => {
   const ref1 = useRef();
@@ -73,10 +68,6 @@ const ConnectPointsWrapper = ({ id, dragRef, cardRef }) => {
   );
 };
 
-const getBorderColorClassFromId = (stage) => {
-  return `border-${colorClasses[stage]}`; // This will return something like "border-red-500"
-};
-
 // const getBgColorClassFromId = (id) => {
 //   const stageName = id.split("-")[0];
 //   return `bg-${colorClasses[stageName]}`;
@@ -88,18 +79,16 @@ const getBgColorClassFromId = (stage) => {
 
 export default function Card({ id, stage, number, handleDelete, text, comments, changeSelectedCardIds, selectedCardIds }) {
 
-  let textArea = null;
+  const textAreaRef = useRef(null);
   useEffect(() => {
-    textArea = document.getElementById(id + "-textarea");
-    textArea.value = text;
-    textArea.style.height = textArea.scrollHeight + 'px';
-  }, []);
+    if (!textAreaRef.current) {
+      return;
+    }
+    textAreaRef.current.value = text;
+    textAreaRef.current.style.height = "auto";
+    textAreaRef.current.style.height = textAreaRef.current.scrollHeight + "px";
+  }, [id, text]);
 
-  const lastX = null;
-  const lastY = null;
-
-  const { user } = useUserAuth();
-  const borderColorClass = getBorderColorClassFromId(id);
   const bgColorClass = getBgColorClassFromId(stage);
   const cardData = useMyStore(
     (store) => store.cards.filter((cardData) => cardData.uid === id)[0],
@@ -124,7 +113,6 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
   };
 
   const addLink = useMyStore((store) => store.addLink);
-  const addComment = useMyStore((store) => store.addComment);
   const extendCanvasRight = useMyStore((store) => store.extendCanvasRight);
   const extendCanvasBottom = useMyStore((store) => store.extendCanvasBottom);
   const stageName =
@@ -138,21 +126,13 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
   };
 
   const setTextWrapper = (text) => {
-    if (textArea) {
-        textArea.value = text;  // Update the text in the textarea
-        textArea.style.height = "auto";  // Reset height to ensure the new height calculation is correct
-        textArea.style.height = textArea.scrollHeight + "px";  // Set the height to the scroll height
+    if (textAreaRef.current) {
+        textAreaRef.current.value = text;  // Update the text in the textarea
+        textAreaRef.current.style.height = "auto";  // Reset height to ensure the new height calculation is correct
+        textAreaRef.current.style.height = textAreaRef.current.scrollHeight + "px";  // Set the height to the scroll height
     }
 }
 
-  // Add state to control the visibility of the popup
-  const [showSmallCommentBox] = useState(true); // New state for small comment box
-
-  // State to keep track of comment boxes
-  const [hasComments, setHasComments] = useState(false);
-  const [open, setOpen] = useState(false);
-  const closeModal = () => setOpen(false);
-  const [commentText, setCommentText] = useState("");
   const [showComments, setShowComments] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [selected, setSelected] = useState(false);
@@ -181,7 +161,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
         onClick={(e) => { changeSelectedCardIds(id); setSelected(!selected); e.stopPropagation();}}
         onDragOver={(e) => e.preventDefault()}
         onDrop={(e) => {
-          if (e.dataTransfer.getData("arrow") != id) {
+          if (e.dataTransfer.getData("arrow") !== id) {
             const refs = { start: e.dataTransfer.getData("arrow"), end: id };
             addLink(refs);
           }
@@ -193,12 +173,11 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
               <div onMouseOver={() => setShowPrompt(true)} onMouseOut={() => setShowPrompt(false)}>{stageName}</div>
               {
                 (evaluationData.length) !== 0 && (
-                  <button className="ml-1 text-white"
+                  <button className="ml-1 w-7 h-7 flex items-center justify-center hover:scale-105 transition-transform duration-150"
                     onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
-                    <svg className="w-7 h-7" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <rect x="5%" y="5%" width="26" height="21" fill="#fca5a5"></rect>
-                      <path d="M27 0H3C1.35 0 0 1.35 0 3V30L6 24H27C28.65 24 30 22.65 30 21V3C30 1.35 28.65 0 27 0ZM27 21H4.8L3 22.8V3H27V21Z" fill="#fca5a5" stroke="" strokeWidth="1" />
-                      <text x="50%" y="48%" className="text-sm" textAnchor="middle" fill="black" dominantBaseline="central">{evaluationData.length}</text>
+                    <svg className="w-7 h-7 drop-shadow-sm animate-pulse" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M27 0H3C1.35 0 0 1.35 0 3V30L6 24H27C28.65 24 30 22.65 30 21V3C30 1.35 28.65 0 27 0Z" fill="#fca5a5" />
+                      <text x="50%" y="48%" className="text-sm" textAnchor="middle" fill="#111827" dominantBaseline="central">{evaluationData.length}</text>
                     </svg>
                   </button>
                 )
@@ -257,6 +236,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
           
           <textarea
             id={id + "-textarea"}
+            ref={textAreaRef}
             className={`no-drag p-2 ${stageName!=="Note"? "w-60" : "w-[700px]"} outline-none text-md`}
             style={{ resize: "none", minHeight: '40px', height: 'auto', draggable: 'false' }}
             onClick={(event) => { event.stopPropagation(); }}
@@ -274,12 +254,12 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
               <div className="overflow-y-auto overflow-x-hidden max-h-80 h-100">
                 {
                   comments.map((comment) => (
-                    <MessageBox key={comment.uid} commentId={comment.uid} name={comment.by} time={typeof comment.lastUpdatedTime === 'string' ? comment.lastUpdatedTime : comment.lastUpdatedTime.toDate().toLocaleDateString('en-US') || "Now"} profileImg={"TODO"} message={comment.text} />
+                    <MessageBox key={comment.uid} commentId={comment.uid} time={typeof comment.lastUpdatedTime === 'string' ? comment.lastUpdatedTime : comment.lastUpdatedTime.toDate().toLocaleDateString('en-US') || "Now"} message={comment.text} />
                   ))
                 }
                 {
                   evaluationData.map((evaluation) => (
-                    <EvaluationBox evaluationData={evaluation} />
+                    <EvaluationBox key={evaluation.uid} evaluationData={evaluation} />
                   ))
                 }
               </div>

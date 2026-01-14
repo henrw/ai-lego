@@ -1,13 +1,13 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState } from "react";
 import useMyStore from "../../../contexts/projectContext";
 
-export default function MessageBox({ commentId, name, time, profileImg, message }) {
+export default function MessageBox({ commentId, time, message }) {
 
     const deleteComment = useMyStore((store) => store.deleteComment);
     const [dropdownState, setDropdownState] = useState(false);
     return (
         <div className="flex items-start mb-1 no-drag">
-            <img className="w-8 h-8 rounded-full no-drag" src="/profile-pic.png" alt="Jese image" onDrag={(e)=>{e.stopPropagation()}} onDragStart={(e)=>{e.stopPropagation()}} onDragStop={(e)=>{e.stopPropagation()}} />
+            <img className="w-8 h-8 rounded-full no-drag" src="/profile-pic.png" alt="Jese" onDrag={(e)=>{e.stopPropagation()}} onDragStart={(e)=>{e.stopPropagation()}} onDragStop={(e)=>{e.stopPropagation()}} />
             <div className="flex flex-col w-full leading-1.5 ml-1">
                 <div className="flex items-left space-x-2 text-xs">
                     {/* <span className="font-semibold">{name}</span> */}

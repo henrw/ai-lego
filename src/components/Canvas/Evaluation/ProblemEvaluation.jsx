@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore from "../../../contexts/projectContext";
 import { colorClasses } from "../../../contexts/projectContext";
@@ -8,23 +8,17 @@ export default function IssueEvaluation({isExpanded, setIsExpanded, selectedCard
 
     const togglePanel = () => setIsExpanded(!isExpanded);
     const [problemText, setProblemText] = useState("");
-    const [valueText, setValueText] = useState("");
     const [stakeholderText, setStakeholderText] = useState("");
     const [impactText, setImpactText] = useState("");
-    const [typeOfImpact, setTypeOfImpact] = useState('');
     const [degreeOfImpact, setDegreeOfImpact] = useState(4);
-    const [scaleOfImpact, setScaleOfImpact] = useState('');
     const [openText, setOpenText] = useState("");
     const addEvaluation = useMyStore((store) => store.addEvaluation);
 
     const resetTextInput = () => {
         setProblemText("");
-        setValueText("");
         setStakeholderText("");
         setImpactText("");
-        setTypeOfImpact("");
         setDegreeOfImpact(4);
-        setScaleOfImpact("");
         setOpenText("");
     }
 

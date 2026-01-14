@@ -97,7 +97,6 @@
 // export default About;
 
 import React from "react";
-import { FaBold } from "react-icons/fa";
 
 const About = () => {
   // Styles
