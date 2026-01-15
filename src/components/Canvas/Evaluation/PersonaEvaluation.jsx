@@ -241,7 +241,13 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                         </div>
                         <button
                             className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName || "Anonymous", [], { type: "persona", personaDescription: selectedPersona[0].description, problem: getProblemText() }); resetTextInput(); setIsExpanded(); }}
+                            onClick={() => {
+                                const author = user?.displayName || "Anonymous";
+                                const personaDescription = selectedPersona[0]?.description || "Unknown persona";
+                                addEvaluation(author, [], { type: "persona", personaDescription, problem: getProblemText() });
+                                resetTextInput();
+                                setIsExpanded();
+                            }}
                         >
                             Save
                         </button>

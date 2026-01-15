@@ -31,8 +31,6 @@ const Canvas = () => {
   };
 
   const [apiPending, setApiPending] = useState(false);
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [streamedPersonaText, setStreamedPersonaText] = useState("");
   const personaAbortRef = useRef(null);
 
   const [selectedCardIds, setSelectedCardIds] = useState([]);
@@ -136,7 +134,6 @@ const Canvas = () => {
       personaAbortRef.current.abort();
       personaAbortRef.current = null;
     }
-    setIsStreaming(false);
     setApiPending(false);
   };
 
@@ -145,9 +142,7 @@ const Canvas = () => {
   const generatePersona = async () => {
     if (apiPending) return;
     setCandidatePersonas([]);
-    setStreamedPersonaText("");
     setApiPending(true);
-    setIsStreaming(false);
     const controller = new AbortController();
     personaAbortRef.current = controller;
 
@@ -156,7 +151,6 @@ const Canvas = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "text/event-stream",
         },
         body: JSON.stringify({
           existingPersonas: personas,
@@ -165,42 +159,13 @@ const Canvas = () => {
         signal: controller.signal,
       });
 
-      const contentType = response.headers.get("content-type") || "";
-      if (response.ok && contentType.includes("text/event-stream") && response.body) {
-        setIsStreaming(true);
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let fullText = "";
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const events = buffer.split("\n\n");
-          buffer = events.pop() || "";
-          for (const event of events) {
-            const line = event.split("\n").find((entry) => entry.startsWith("data: "));
-            if (!line) continue;
-            const chunk = line.replace("data: ", "");
-            if (chunk === "[DONE]") {
-              finalizePersonaCandidates(fullText);
-              setIsStreaming(false);
-              setApiPending(false);
-              return;
-            }
-            fullText += chunk;
-            setStreamedPersonaText((prev) => prev + chunk);
-          }
-        }
-        finalizePersonaCandidates(fullText);
-        setIsStreaming(false);
-        setApiPending(false);
-        return;
-      }
-
       if (response.ok) {
         const data = await response.json();
-        setCandidatePersonas(data.res);
+        if (Array.isArray(data.res)) {
+          setCandidatePersonas(data.res);
+        } else {
+          finalizePersonaCandidates(data.res || "");
+        }
       } else {
         console.error("Failed to fetch:", response.status);
       }
@@ -210,7 +175,6 @@ const Canvas = () => {
       }
     } finally {
       setApiPending(false);
-      setIsStreaming(false);
       personaAbortRef.current = null;
     }
   };
@@ -513,16 +477,11 @@ const Canvas = () => {
               value={personaInputText}
               onChange={(e) => setPersonaInputTextWrapper(e.target.value)}
             />
-            {apiPending && (
-              <p className="mb-2 text-sm text-gray-500">
-                Generating personas... you can keep editing while this runs.
-              </p>
-            )}
-            {isStreaming && streamedPersonaText !== "" && (
-              <div className="mb-3 max-h-56 overflow-y-auto rounded border border-gray-200 bg-gray-50 p-3 text-xs whitespace-pre-wrap">
-                {streamedPersonaText}
-              </div>
-            )}
+                  {apiPending && (
+                    <p className="mb-2 text-sm text-gray-500">
+                      Generating personas... you can keep editing while this runs.
+                    </p>
+                  )}
             {candidatePersonas.length !== 0 && (
               <div>
                 {candidatePersonas.map(item => (

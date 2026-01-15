@@ -27,11 +27,6 @@ Existing Personas:
 ${personaMultiLines}`}],
     };
 
-    const acceptsStream = (req.headers.accept || "").includes("text/event-stream");
-    if (acceptsStream) {
-        payload.stream = true;
-    }
-
     // API endpoint updated to use the latest GPT-4 model
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
         headers: {
@@ -41,55 +36,6 @@ ${personaMultiLines}`}],
         method: "POST",
         body: JSON.stringify(payload),
     });
-
-    if (acceptsStream) {
-        if (!response.ok || !response.body) {
-            const errorText = await response.text();
-            res.status(response.status || 500).json({ error: errorText });
-            return;
-        }
-
-        res.setHeader("Content-Type", "text/event-stream");
-        res.setHeader("Cache-Control", "no-cache, no-transform");
-        res.setHeader("Connection", "keep-alive");
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const events = buffer.split("\n\n");
-            buffer = events.pop() || "";
-            for (const event of events) {
-                const lines = event.split("\n");
-                for (const line of lines) {
-                    if (!line.startsWith("data:")) continue;
-                    const data = line.replace("data:", "").trim();
-                    if (data === "[DONE]") {
-                        res.write("data: [DONE]\n\n");
-                        res.end();
-                        return;
-                    }
-                    try {
-                        const json = JSON.parse(data);
-                        const content = json.choices?.[0]?.delta?.content;
-                        if (content) {
-                            res.write(`data: ${content}\n\n`);
-                        }
-                    } catch (error) {
-                        console.error("Stream parse error:", error);
-                    }
-                }
-            }
-        }
-
-        res.write("data: [DONE]\n\n");
-        res.end();
-        return;
-    }
 
     const json = await response.json();
     console.log(json);
