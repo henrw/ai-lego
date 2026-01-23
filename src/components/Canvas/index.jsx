@@ -333,7 +333,7 @@ const Canvas = () => {
     await updateDoc(doc(db, "projects", projectId), {
       snapshotUrl: downloadUrl,
     })
-      .then(() => // console.log("Document successfully written!"))
+      .then(() => console.log("Document successfully written!"))
       .catch(error => console.error("Error writing document: ", error));
   }, [projectId, uploadImageToStorage]);
 
