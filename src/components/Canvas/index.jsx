@@ -106,7 +106,7 @@ const Canvas = () => {
   //     });
   // }, []); // Empty dependency array means this effect runs once on mount
 
-  const removeEnumerators = (text) => text.replace(/^\d+\.\s+|^\-\s+/gm, "");
+  const removeEnumerators = (text) => text.replace(/^(?:\d+\.\s+|-\s+)/gm, "");
 
   const parsePersonasFromXml = (text) => {
     const matches = [...text.matchAll(/<persona>([\s\S]*?)<\/persona>/g)];
