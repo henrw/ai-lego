@@ -157,7 +157,7 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                 const finalText = data.res || "";
                 streamTargetRef.current = finalText;
                 streamCompleteRef.current = true;
-                console.log(data.res);
+                // console.log(data.res);
             } else {
                 console.error('Failed to fetch:', response.status);
                 streamCompleteRef.current = true;

@@ -9,7 +9,7 @@ function CollaboratorModal({ isOpen, onClose }) {
     const [userNotFound, setUserNotFound] = useState(false);
     const handleSubmit = (e) => {
         e.preventDefault();
-        console.log("Sending invitation to:", email);
+        // console.log("Sending invitation to:", email);
         // Add your logic to send the email or manage collaborators here
     };
 
@@ -32,13 +32,13 @@ function CollaboratorModal({ isOpen, onClose }) {
             try {
                 const querySnapshot = await getDocs(q);
                 if (querySnapshot.empty) {
-                    console.log("No matching users.");
+                    // console.log("No matching users.");
                     setUserNotFound(true);
                     return;
                 }
                 let userId = null;
                 querySnapshot.forEach((doc) => {
-                    console.log(`Found user with ID: ${doc.id}`);
+                    // console.log(`Found user with ID: ${doc.id}`);
                     userId = doc.id;
                     // Do something with the doc.id or doc.data()
                 });
@@ -52,7 +52,7 @@ function CollaboratorModal({ isOpen, onClose }) {
                     await updateDoc(userDocRef, {
                         projectIds: arrayUnion(projectId)
                     });
-                    console.log("User ID added to project.");
+                    // console.log("User ID added to project.");
                 } catch (error) {
                     console.error("Error adding user ID to project: ", error);
                 }

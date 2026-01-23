@@ -1,7 +1,7 @@
 import React from "react";
 
 export default function EvaluationBox({ evaluationData }) {
-    console.log(evaluationData);
+    // console.log(evaluationData);
     const { by, problem, type, stakeholder, impact, open } = evaluationData;
     return (
         <div className="flex items-start mb-2">

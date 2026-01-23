@@ -35,7 +35,7 @@ const Navbar = () => {
         if (docSnap.exists()) {
           setUserDetails(docSnap.data());
         } else {
-          console.log("No such document!");
+          // console.log("No such document!");
         }
       };
       fetchUserDetails();
@@ -46,7 +46,7 @@ const Navbar = () => {
     const auth = getAuth();
     signOut(auth)
       .then(() => {
-        console.log("User signed out.");
+        // console.log("User signed out.");
       })
       .catch((error) => {
         console.error("Error signing out:", error);

@@ -58,7 +58,7 @@ const Home = () => {
           if (docSnap.exists()) {
             setUserProfile(docSnap.data());
           } else {
-            console.log("No such document!");
+            // console.log("No such document!");
           }
         } catch (error) {
           console.error("Error fetching user profile: ", error);
@@ -108,20 +108,20 @@ const Home = () => {
   };
 
   const handleImageChange = (e) => {
-    console.log("Handling image change...");
+    // console.log("Handling image change...");
     if (e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
-      console.log("Selected file:", file);
+      // console.log("Selected file:", file);
     } else {
-      console.log("No file selected.");
+      // console.log("No file selected.");
     }
   };
 
   const uploadProfileImage = async () => {
-    console.log("Starting image upload...");
+    // console.log("Starting image upload...");
     if (!selectedFile) {
-      console.log("No file to upload.");
+      // console.log("No file to upload.");
       return;
     }
 
@@ -131,25 +131,25 @@ const Home = () => {
         `profile_pictures/${user?.uid}/${selectedFile.name}`
       );
       await uploadBytes(storageRef, selectedFile);
-      console.log("File uploaded. Fetching download URL...");
+      // console.log("File uploaded. Fetching download URL...");
       const imageUrl = await getDownloadURL(storageRef);
       setProfileImageUrl(imageUrl);
-      console.log("Image URL set:", imageUrl);
+      // console.log("Image URL set:", imageUrl);
 
       // Update the user profile with the new image URL
       await updateDoc(doc(db, "users", user?.uid), {
         profile_picture: imageUrl,
       });
-      console.log("User profile updated with new image URL.");
+      // console.log("User profile updated with new image URL.");
     } catch (error) {
       console.error("Error during image upload:", error);
     }
   };
 
   const deleteProfileImage = async () => {
-    console.log("Starting image deletion...");
+    // console.log("Starting image deletion...");
     if (!selectedFile) {
-      console.log("No file to delete.");
+      // console.log("No file to delete.");
       return;
     }
 
@@ -159,12 +159,12 @@ const Home = () => {
         `profile_pictures/${user?.uid}/${selectedFile.name}`
       );
       await deleteObject(storageRef);
-      console.log("Image deleted from storage.");
+      // console.log("Image deleted from storage.");
       setProfileImageUrl("");
 
       // Update the user profile to remove the image URL
       await updateDoc(doc(db, "users", user?.uid), { profile_picture: null });
-      console.log("User profile image URL removed.");
+      // console.log("User profile image URL removed.");
     } catch (error) {
       console.error("Error during image deletion:", error);
     }
@@ -245,7 +245,7 @@ const Home = () => {
 
       await deleteObject(ref(storage, `project_snapshots/${projectId}`))
       .then(() => {
-          console.log('File successfully deleted!');
+          // console.log('File successfully deleted!');
       })
       .catch((error) => {
           console.error('Error removing file: ', error);

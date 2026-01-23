@@ -82,7 +82,7 @@ const Canvas = () => {
       description: personaInputText,
       isSelected: false
     }]);
-    console.log(personas);
+    // console.log(personas);
   }
 
   // useEffect(() => {
@@ -203,7 +203,7 @@ const Canvas = () => {
 
 
   const addCollaborator = useCallback(async () => {
-    console.log(user?.uid);
+    // console.log(user?.uid);
     try {
       const userId = user?.uid;
       const projectRef = doc(db, "projects", projectId);
@@ -215,7 +215,7 @@ const Canvas = () => {
         await updateDoc(userDocRef, {
           projectIds: arrayUnion(projectId)
         });
-        console.log("User ID added to project.");
+        // console.log("User ID added to project.");
       } catch (error) {
         console.error("Error adding user ID to project: ", error);
       }
@@ -321,7 +321,7 @@ const Canvas = () => {
     return uploadBytes(storageRef, fileBlob)
       .then((snapshot) => getDownloadURL(snapshot.ref))
       .then((downloadURL) => {
-        console.log("File available at", downloadURL);
+        // console.log("File available at", downloadURL);
         return downloadURL; // Return the URL to use it for saving in Firestore or other needs
       });
   }, []);
@@ -333,7 +333,7 @@ const Canvas = () => {
     await updateDoc(doc(db, "projects", projectId), {
       snapshotUrl: downloadUrl,
     })
-      .then(() => console.log("Document successfully written!"))
+      .then(() => // console.log("Document successfully written!"))
       .catch(error => console.error("Error writing document: ", error));
   }, [projectId, uploadImageToStorage]);
 

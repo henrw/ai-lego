@@ -38,8 +38,8 @@ ${personaMultiLines}`}],
     });
 
     const json = await response.json();
-    console.log(json);
-    console.log(json.choices[0].message.content);
+    // console.log(json);
+    // console.log(json.choices[0].message.content);
 
     const content = json.choices[0].message.content || "";
     const personaMatches = [...content.matchAll(/<persona>([\s\S]*?)<\/persona>/g)];
