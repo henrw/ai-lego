@@ -1,0 +1,258 @@
+import React, { useRef, useState, useEffect } from "react";
+import Draggable from "react-draggable";
+import Xarrow from "react-xarrows";
+import useMyStore, { colorClasses } from "../../../contexts/projectContext";
+import { shallow } from "zustand/shallow";
+import MessageBox from "./Message";
+import EvaluationBox from "./Evaluation";
+
+const ConnectPointsWrapper = ({ id, dragRef, cardRef }) => {
+  const ref1 = useRef();
+
+  const [position, setPosition] = useState({
+    position: "absolute",
+    top: "20px",
+    right: "0%",
+    zIndex: 1
+  });
+  const [beingDragged, setBeingDragged] = useState(false);
+
+  return (
+    <React.Fragment>
+      <div
+        className="connectPoint right-0 top-[20px] absolute w-6 h-6 rounded-full transform translate-x-[50%] z-1001"
+        style={{
+          ...position,
+        }}
+        draggable
+        onMouseDown={(e) => e.stopPropagation()}
+        onDragStart={(e) => {
+          setBeingDragged(true);
+          e.dataTransfer.setData("arrow", id);
+        }}
+        onDrag={(e) => {
+          const { offsetTop, offsetLeft } = cardRef.current;
+          const { x, y } = dragRef.current.state;
+          setPosition({
+            position: "fixed",
+            left: e.clientX + window.scrollX - x - offsetLeft,
+            top: e.clientY + window.scrollY - y - offsetTop,
+            transform: "none",
+            opacity: 0,
+          });
+        }}
+        ref={ref1}
+        onDragEnd={(e) => {
+          setPosition({
+            position: "absolute",
+            top: "20px",
+            right: "0%",
+            zIndex: 1
+          });
+          setBeingDragged(false);
+        }}
+      />
+      {beingDragged ? (
+        <Xarrow
+          path="straight"
+          headSize={4}
+          start={id + "-right"}
+          startAnchor={"right"}
+          endAnchor={"left"}
+          end={ref1}
+          color="#9CAFB7"
+          zIndex={0}
+        />
+      ) : null}
+    </React.Fragment>
+  );
+};
+
+const getBgColorClassFromId = (stage) => `bg-${colorClasses[stage]}`;
+
+export default function Card({ id, stage, number, handleDelete, text, comments, changeSelectedCardIds, selectedCardIds }) {
+
+  const textAreaRef = useRef(null);
+  useEffect(() => {
+    if (!textAreaRef.current) {
+      return;
+    }
+    textAreaRef.current.value = text;
+    textAreaRef.current.style.height = "auto";
+    textAreaRef.current.style.height = textAreaRef.current.scrollHeight + "px";
+  }, [id, text]);
+
+  const bgColorClass = getBgColorClassFromId(stage);
+  const cardData = useMyStore(
+    (store) => store.cards.filter((cardData) => cardData.uid === id)[0],
+    shallow
+  );
+  const evaluationData = useMyStore(
+    (store) => store.evaluations.filter((evaluation) => evaluation.cardIds.includes(id)),
+    shallow
+  );
+  // Extract the stage description from cardData
+
+  const prompt = cardData ? cardData.prompt : "No prompt available";
+  const setCardPosition = useMyStore((store) => store.setCardPosition);
+  const dragRef = useRef();
+  const cardRef = useRef();
+
+  const handleStop = (event, dragElement) => {
+    setCardPosition(dragElement.node.id, {
+      x: dragElement.x,
+      y: dragElement.y,
+    });
+  };
+
+  const addLink = useMyStore((store) => store.addLink);
+  const extendCanvasRight = useMyStore((store) => store.extendCanvasRight);
+  const extendCanvasBottom = useMyStore((store) => store.extendCanvasBottom);
+  const stageName =
+    stage.charAt(0).toUpperCase() + stage.slice(1);
+
+  const refreshLinks = useMyStore((store) => store.refreshLinks); // Add this function inside the Card component before the return statement
+
+  const handleTextChange = (textArea, cardId) => {
+    useMyStore.getState().setCardDescription(cardId, textArea.value);
+    textArea.style.height = textArea.scrollHeight + 'px';
+  };
+
+  const setTextWrapper = (text) => {
+    if (textAreaRef.current) {
+        textAreaRef.current.value = text;  // Update the text in the textarea
+        textAreaRef.current.style.height = "auto";  // Reset height to ensure the new height calculation is correct
+        textAreaRef.current.style.height = textAreaRef.current.scrollHeight + "px";  // Set the height to the scroll height
+    }
+}
+
+  const [showComments, setShowComments] = useState(false);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [selected, setSelected] = useState(false);
+
+  return (
+    <Draggable
+      ref={dragRef}
+      onStop={handleStop}
+      position={cardData.position}
+      onDrag={(e) => {
+        refreshLinks();
+        // if (window.scrollX + e.clientX >= document.documentElement.scrollWidth - 50) {
+        extendCanvasRight();
+        // }
+        // if (window.scrollY + e.clientY >= document.documentElement.scrollHeight - 50) {
+        extendCanvasBottom();
+        // }
+      }}
+      cancel=".no-drag"
+    >
+      <div
+        className={`absolute z-1 text-sm flex flex-col justify-center ${stageName!=="Note"? "w-60" : "w-[700px]"} bg-white shadow ${selectedCardIds.includes(id) ? "outline outline-4 outline-blue-400" : ""}`} // w-96 for fixed width
+        id={id}
+        ref={cardRef}
+        style={{ paddingBottom: "0" }}
+        onClick={(e) => { changeSelectedCardIds(id); setSelected(!selected); e.stopPropagation();}}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          if (e.dataTransfer.getData("arrow") !== id) {
+            const refs = { start: e.dataTransfer.getData("arrow"), end: id };
+            addLink(refs);
+          }
+        }}
+      >
+        <div className="grow-1">
+          <div className={`flex flex-row justify-between items-center ${bgColorClass} px-2 py-2 text-lg font-mono font-bold`}>
+            <div className="flex flex-row">
+              <div onMouseOver={() => setShowPrompt(true)} onMouseOut={() => setShowPrompt(false)}>{stageName}</div>
+              {evaluationData.length !== 0 && (
+                <button className="ml-1 w-7 h-7 flex items-center justify-center hover:scale-105 transition-transform duration-150"
+                  onClick={() => { setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
+                  <svg className="w-7 h-7 drop-shadow-sm animate-pulse" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M27 0H3C1.35 0 0 1.35 0 3V30L6 24H27C28.65 24 30 22.65 30 21V3C30 1.35 28.65 0 27 0Z" fill="#fca5a5" />
+                    <text x="50%" y="48%" className="text-sm" textAnchor="middle" fill="#111827" dominantBaseline="central">{evaluationData.length}</text>
+                  </svg>
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => handleDelete(id)}
+              className="text-gray-400 hover:text-red-500"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div
+            className={`absolute bottom-[100%] left-0 h-min w-60 bg-black text-white text-left p-2 fixed z-10 whitespace-pre-wrap transition-opacity duration-300 ${showPrompt ? "visible opacity-100" : "invisible opacity-0"}`}>
+            {prompt}
+          </div>
+        </div>
+
+        <div className="relative">
+          {
+            stageName !== "Note" &&
+            <>
+            <ConnectPointsWrapper {...{ id, dragRef, cardRef }} />
+
+            <div id={id + "-right"} className="absolute right-0 top-[20px] transform translate-x-[50%] z-0">
+            <svg className="w-5 h-5" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="20" cy="20" r="20" fill="white" />
+              <circle cx="20" cy="20" r="10" fill="black" />
+            </svg>
+          </div>
+          <div id={id + "-left"} className="absolute left-0 h-6 top-[20px] transform z-0">
+          </div>
+            </>
+          }
+          
+          
+          <textarea
+            id={id + "-textarea"}
+            ref={textAreaRef}
+            className={`no-drag p-2 ${stageName!=="Note"? "w-60" : "w-[700px]"} outline-none text-md`}
+            style={{ resize: "none", minHeight: '40px', height: 'auto', draggable: 'false' }}
+            onClick={(event) => { event.stopPropagation(); }}
+            onChange={(e) => setTextWrapper(e.target.value)}
+            onBlur={(e) => { setShowPrompt(false); handleTextChange(e.target, id);}}
+            onFocus={() => { setShowPrompt(true); }}
+            onDoubleClick={() => { }}
+            placeholder="Describe this stage..."
+          />
+        </div>
+        <div className={`flex flex-col grow-1`}>
+          {showComments && (
+            <div className={`${bgColorClass} space-y-2 p-2`}>
+              <div className="font-mono font-bold">Evaluation</div>
+              <div className="overflow-y-auto overflow-x-hidden max-h-80 h-100">
+                {
+                  comments.map((comment) => (
+                    <MessageBox key={comment.uid} commentId={comment.uid} time={typeof comment.lastUpdatedTime === 'string' ? comment.lastUpdatedTime : comment.lastUpdatedTime.toDate().toLocaleDateString('en-US') || "Now"} message={comment.text} />
+                  ))
+                }
+                {
+                  evaluationData.map((evaluation) => (
+                    <EvaluationBox key={evaluation.uid} evaluationData={evaluation} />
+                  ))
+                }
+              </div>
+
+            </div>
+          )
+          }
+          {
+            (comments.length !== 0 && evaluationData.length !== 0) && (
+              <button className={`flex justify-center rounded-b bg-gray-100 h-5`}
+                onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); setTimeout(refreshLinks, 0); }}>
+                <svg width="40" height="20" viewBox="0 0 134 39" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  {showComments && <path d="M133.5 19.5L67 0.5L0.5 19.5V38.5L67 19.5L133.5 38.5V19.5Z" fill="#D2D2D2" />}
+                  {!showComments && <path d="M0.5 19.5L67 38.5L133.5 19.5V0.5L67 19.5L0.5 0.5L0.5 19.5Z" fill="#D2D2D2" />}
+                </svg>
+              </button>
+            )
+          }
+        </div>
+      </div>
+    </Draggable>
+  );
+}
