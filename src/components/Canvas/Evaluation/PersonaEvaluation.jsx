@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore from "../../../contexts/projectContext";
+import OpenAIKeyField from "../ui/OpenAIKeyField";
 
-export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedCardIds, number, cardsData, cardId2number, selectedPersona }) {
+export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedCardIds, number, cardsData, cardId2number, selectedPersona, openAiApiKey, setOpenAiApiKey }) {
     const { user } = useUserAuth();
 
     const [apiPending, setApiPending] = useState(false);
@@ -14,6 +15,7 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
     const streamCompleteRef = useRef(false);
     const streamStartTimeRef = useRef(0);
     const [personaEvalText, setPersonaEvalText] = useState("");
+    const [apiError, setApiError] = useState("");
     const textAreaRef = useRef(null);
     const shouldAutoScrollRef = useRef(true);
 
@@ -86,6 +88,11 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
 
     const evaluatePersona = async () => {
         if (apiPending) return;
+        if (!openAiApiKey) {
+            setApiError("Enter your OpenAI API key before running the simulation.");
+            return;
+        }
+        setApiError("");
         setApiPending(true);
         setIsStreaming(true);
         streamTargetRef.current = "";
@@ -105,6 +112,7 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                 headers: {
                     "Content-Type": "application/json",
                     Accept: "text/event-stream",
+                    Authorization: `Bearer ${openAiApiKey}`,
                 },
                 body: JSON.stringify({
                     personaDescription: selectedPersona[0].description,
@@ -155,12 +163,14 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                 streamTargetRef.current = data.res || "";
                 streamCompleteRef.current = true;
             } else {
-                console.error('Failed to fetch:', response.status);
+                const data = await response.json().catch(() => ({}));
+                setApiError(data.error || "OpenAI could not evaluate this persona. Check your API key and try again.");
                 streamCompleteRef.current = true;
             }
         } catch (error) {
             if (error.name !== "AbortError") {
                 console.error("Failed to fetch:", error);
+                setApiError("The request could not be completed. Check your connection and try again.");
             }
             streamCompleteRef.current = true;
         } finally {
@@ -198,8 +208,12 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                                 )
                             }
                         </div>
+                        <OpenAIKeyField value={openAiApiKey} onChange={setOpenAiApiKey} />
+                        {apiError && (
+                            <p role="alert" className="mt-2 text-sm text-red-600">{apiError}</p>
+                        )}
                         {selectedPersona.length === 1 && (
-                            <div className="flex flex-col gap-2 mb-2">
+                            <div className="mt-3 flex flex-col gap-2 mb-2">
                                 <button
                                     type="button"
                                     className="w-full focus:outline-none text-white bg-purple-700 hover:bg-purple-800 focus:ring-4 focus:ring-purple-300 font-medium rounded-lg text-sm px-4 py-2.5 dark:bg-purple-600 dark:hover:bg-purple-700 dark:focus:ring-purple-900 disabled:opacity-60 disabled:cursor-not-allowed"

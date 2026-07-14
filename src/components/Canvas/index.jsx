@@ -11,6 +11,7 @@ import { useUserAuth } from "../../authentication/UserAuthContext";
 import html2canvas from 'html2canvas';
 
 import PersonaIcon from './ui/Persona';
+import OpenAIKeyField from './ui/OpenAIKeyField';
 
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -30,6 +31,8 @@ const Canvas = () => {
   };
 
   const [apiPending, setApiPending] = useState(false);
+  const [openAiApiKey, setOpenAiApiKey] = useState("");
+  const [personaApiError, setPersonaApiError] = useState("");
   const personaAbortRef = useRef(null);
 
   const [selectedCardIds, setSelectedCardIds] = useState([]);
@@ -64,14 +67,10 @@ const Canvas = () => {
 
   const [personaImgIdx, setPersonaImgIdx] = useState(0);
   const personaImgUrls = [
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fboy.png?alt=media&token=8a12acfa-25f2-44a9-90f4-ef407aeff3dc",
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fboy1.png?alt=media&token=dc0961de-51f1-43ba-9d4d-e3b8ae999a35",
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fgirl.png?alt=media&token=cee9ed5a-72ce-4855-bd0a-abba8014d0fb",
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fgrandma.png?alt=media&token=62911dc9-8cbf-48ff-b1e5-ceb1a186f323",
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fgrandpa.png?alt=media&token=c12f735a-71e3-44d0-a59f-897cf5b83be4",
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fman.png?alt=media&token=92fed1b8-75a9-4b2b-8f4a-febd7d76c506",
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fneutral.png?alt=media&token=3523e99c-1ddb-4fe6-82ad-7fd0feae778d",
-    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2Fwoman.png?alt=media&token=f74c9d68-b0f2-4d4c-8ecd-fcb76e3122eb"
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2FSubject%205.png?alt=media",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2FSubject%206.png?alt=media",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2FSubject%207.png?alt=media",
+    "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2FSubject%208.png?alt=media"
   ]
 
   const addPersona = async () => {
@@ -117,6 +116,11 @@ const Canvas = () => {
 
   const generatePersona = async () => {
     if (apiPending) return;
+    if (!openAiApiKey) {
+      setPersonaApiError("Enter your OpenAI API key before generating personas.");
+      return;
+    }
+    setPersonaApiError("");
     setCandidatePersonas([]);
     setApiPending(true);
     const controller = new AbortController();
@@ -127,6 +131,7 @@ const Canvas = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${openAiApiKey}`,
         },
         body: JSON.stringify({
           existingPersonas: personas,
@@ -143,11 +148,13 @@ const Canvas = () => {
           finalizePersonaCandidates(data.res || "");
         }
       } else {
-        console.error("Failed to fetch:", response.status);
+        const data = await response.json().catch(() => ({}));
+        setPersonaApiError(data.error || "OpenAI could not generate personas. Check your API key and try again.");
       }
     } catch (error) {
       if (error.name !== "AbortError") {
         console.error("Failed to fetch:", error);
+        setPersonaApiError("The request could not be completed. Check your connection and try again.");
       }
     } finally {
       setApiPending(false);
@@ -385,7 +392,7 @@ const Canvas = () => {
 
       <p className="fixed bottom-[125px] right-6 font-bold text-lg z-10">Evaluation:</p>
       <StageEvaluation isExpanded={isStageEvaluationExpanded} setIsExpanded={setIsStageEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
-      <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} />
+      <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} openAiApiKey={openAiApiKey} setOpenAiApiKey={setOpenAiApiKey} />
 
       <MiniMap />
 
@@ -436,9 +443,13 @@ const Canvas = () => {
             <p className="my-4 text-sm text-gray-700">
               Describe a stakeholder who might potentially be negatively impacted by the AI product.
             </p>
+            <OpenAIKeyField value={openAiApiKey} onChange={setOpenAiApiKey} />
+            {personaApiError && (
+              <p role="alert" className="mt-2 text-sm text-red-600">{personaApiError}</p>
+            )}
             <textarea
               ref={personaInputTextRef}
-              className="no-drag w-full border border-gray-300 p-3 mb-3 text-sm"
+              className="no-drag mt-4 w-full border border-gray-300 p-3 mb-3 text-sm"
               placeholder="Describe your persona..."
               value={personaInputText}
               onChange={(e) => setPersonaInputTextWrapper(e.target.value)}

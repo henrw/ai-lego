@@ -20,11 +20,9 @@ A collaborative canvas web tool for cross-functional teams to identify and addre
    REACT_APP_API_BASE_URL=        # Leave empty for local dev (proxied via Vercel)
    ```
 
-   Set the following in your Vercel project settings (do not commit to `.env`):
-
-   ```
-   OPENAI_API_KEY=sk-...
-   ```
+   The app does not use a shared server-side OpenAI key. Each user enters their own key
+   when using an AI feature. The key is retained only in the current tab's memory and is
+   not written to browser storage, Firebase, project data, or server storage.
 
 3. **Firebase**
 
