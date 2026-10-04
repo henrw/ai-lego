@@ -4,7 +4,7 @@ import { useNavigate } from "react-router";
 import { useUserAuth } from "../authentication/UserAuthContext";
 import { useLocation } from "react-router-dom";
 import { db, storage } from "../firebase";
-import { doc, getDoc, updateDoc, addDoc, deleteDoc, collection, arrayUnion, arrayRemove, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, query, where, getDocs, serverTimestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, deleteObject, getDownloadURL } from "firebase/storage";
 import ProfileModal from "./ProfileModal";
 import Footer from "./Footer";
@@ -17,6 +17,8 @@ const Home = () => {
   const [showModal, setShowModal] = useState(false);
   const [userProfile, setUserProfile] = useState({});
   const [projectsInfo, setProjectsInfo] = useState([]);
+  const [projectError, setProjectError] = useState("");
+  const [projectPending, setProjectPending] = useState(false);
   // Combined state object for all fields
   const [fields, setFields] = useState({
     occupation: "",
@@ -61,22 +63,23 @@ const Home = () => {
       if (user?.uid) {
         const userDocRef = doc(db, "users", user.uid);
         const userDocSnap = await getDoc(userDocRef);
-        const projectIds = userDocSnap.data().projectIds;
+        const projectIds = userDocSnap.data()?.projectIds || [];
         if (projectIds && projectIds.length) {
           const projects = [];
-          const q = query(collection(db, "projects"), where("uid", "in", projectIds));
-          const projectDocSnap = await getDocs(q);
-          projectDocSnap.forEach(doc => {
+          const groups = [];
+          for (let i = 0; i < projectIds.length; i += 30) groups.push(projectIds.slice(i, i + 30));
+          const snapshots = await Promise.all(groups.map(ids => getDocs(query(collection(db, "projects"), where("uid", "in", ids)))));
+          snapshots.forEach(projectDocSnap => projectDocSnap.forEach(doc => {
             const { uid, name, lastUpdatedTime, lastUpdatedBy, snapshotUrl } = doc.data();
             projects.push({
               uid,
               name,
-              lastUpdatedTime: lastUpdatedTime.toDate().toLocaleDateString('en-US'),
-              lastUpdatedTimeRaw: lastUpdatedTime,
+              lastUpdatedTime: lastUpdatedTime?.toDate?.().toLocaleDateString('en-US') || 'Just created',
+              lastUpdatedTimeRaw: lastUpdatedTime?.toMillis?.() || 0,
               lastUpdatedBy,
               snapshotUrl: snapshotUrl
             });
-          });
+          }));
           projects.sort((a, b) => b.lastUpdatedTimeRaw - a.lastUpdatedTimeRaw);
 
           setProjectsInfo(projects);
@@ -85,7 +88,7 @@ const Home = () => {
     };
 
     fetchUserProfile();
-    fetchProjectData();
+    fetchProjectData().catch(() => setProjectError("Could not load projects. Check your connection and refresh."));
   }, [user]);
 
   useEffect(() => {
@@ -159,38 +162,29 @@ const Home = () => {
   };
 
   const createProject = async () => {
-    const docRef = await addDoc(collection(db, "projects"), {
-      name: "untitled",
-      cards: [],
-      links: [],
-      evaluations: [],
-      userIds: [user.uid],
-      lastUpdatedTime: serverTimestamp(),
-      lastUpdatedBy: user.uid,
-      canvasScale: { x: 1.1, y: 1.1 },
-    });
-
-    updateDoc(docRef, { uid: docRef.id });
-    updateDoc(doc(db, "users", user.uid), { projectIds: arrayUnion(docRef.id) });
-    navigate(`/project/${docRef.id}`);
+    if (!user?.uid || projectPending) return;
+    setProjectPending(true); setProjectError("");
+    try {
+      const ref = doc(collection(db, "projects"));
+      const batch = writeBatch(db);
+      batch.set(ref, { uid: ref.id, name: "untitled", cards: [], links: [], evaluations: [], personas: [], userIds: [user.uid], lastUpdatedTime: serverTimestamp(), lastUpdatedBy: user.uid, canvasScale: { x: 1.1, y: 1.1 } });
+      batch.update(doc(db, "users", user.uid), { projectIds: arrayUnion(ref.id) });
+      await batch.commit(); navigate(`/project/${ref.id}`);
+    } catch { setProjectError("Could not create a project. Check your connection and retry."); }
+    finally { setProjectPending(false); }
   };
 
   const deleteProject = async (projectId) => {
-    const newProjectsInfo = projectsInfo.filter(project => project.uid !== projectId);
-    setProjectsInfo(newProjectsInfo);
+    if (!window.confirm("Delete this project? This cannot be undone.")) return;
+    setProjectError("");
     try {
-      await deleteDoc(doc(db, "projects", projectId));
-      await updateDoc(doc(db, "users", user.uid), {
-        projectIds: arrayRemove(projectId)
-      });
-
-      await deleteObject(ref(storage, `project_snapshots/${projectId}`)).catch((error) => {
-        console.error('Error removing snapshot: ', error);
-      });
-  
-    } catch (error) {
-      console.error("Error deleting project: ", error);
-    }
+      const batch = writeBatch(db);
+      batch.delete(doc(db, "projects", projectId));
+      batch.update(doc(db, "users", user.uid), { projectIds: arrayRemove(projectId) });
+      await batch.commit();
+      setProjectsInfo(projects => projects.filter(project => project.uid !== projectId));
+      await deleteObject(ref(storage, `project_snapshots/${projectId}.png`)).catch(() => {});
+    } catch { setProjectError("Could not delete the project. Check your connection and retry."); }
   };
 
   const handleLoginRedirect = () => {
@@ -231,14 +225,15 @@ const Home = () => {
               Projects
             </div>
             <button className="ml-auto text-md rounded p-2 text-white" style={{ backgroundColor: "#b063c5" }}
-              onClick={createProject}>
-              + New Project
+              disabled={projectPending} onClick={createProject}>
+              {projectPending ? "Creating…" : "+ New Project"}
             </button>
           </div>
           <p className="text-sm text-gray-500 mb-3">
             Project data will be shared publicly in the testing mode.
           </p>
 
+          {projectError && <p role="alert" className="text-red-700">{projectError}</p>}
           <Row className="mb-4">
             {projectsInfo.map((item, index) => (
               <Col md={3} key={index} className="mb-4" onClick={() => navigate(`/project/${item.uid}`)} style={{ cursor: 'pointer' }}>

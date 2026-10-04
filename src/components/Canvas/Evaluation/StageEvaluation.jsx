@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import { v4 as uuid } from "uuid";
+import useDraft from "../../../utils/useDraft";
+import React, { useRef, useState } from "react";
 import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore, { colorClasses, stageEvaluationPrompts } from "../../../contexts/projectContext";
 
@@ -7,12 +9,22 @@ export default function StageEvaluation({isExpanded, setIsExpanded, selectedCard
     const { user } = useUserAuth();
 
     const togglePanel = () => setIsExpanded(!isExpanded);
-    const [problemText, setProblemText] = useState("");
+    const projectId = useMyStore(store => store.projectId);
+    const [problemText, setProblemText, resetTextInput] = useDraft(`evaluation-stage-${projectId}`);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState("");
+    const submissionRef = useRef(null);
+    const validCardIds = selectedCardIds.filter(id => cardsData.some(card => card.uid === id));
     const addEvaluation = useMyStore((store) => store.addEvaluation);
 
-    const resetTextInput = () => {
-        setProblemText("");
-    }
+    const saveEvaluation = async () => {
+        if (saving || !problemText.trim() || !validCardIds.length) return;
+        setSaving(true); setSaveError(""); submissionRef.current ||= `evaluation-${uuid()}`;
+        const ok = await addEvaluation(user?.displayName || "Anonymous", validCardIds, { uid: submissionRef.current, type: "stage", problem: problemText.trim() });
+        setSaving(false);
+        if (ok) { resetTextInput(); submissionRef.current = null; setIsExpanded(false); }
+        else setSaveError("Could not save this evaluation. Your draft is retained; retry saving.");
+    };
 
     return (
         <>
@@ -35,13 +47,13 @@ export default function StageEvaluation({isExpanded, setIsExpanded, selectedCard
                         <div className="mb-3">
                             <p>Related Stage:</p>
                             {
-                                selectedCardIds.length === 1 ? (
+                                validCardIds.length > 0 ? (
                                     <div className="flex flex-row gap-1">
                                         {
-                                            selectedCardIds.map((cardId) => {
+                                            validCardIds.map((cardId) => {
                                                 const stage = cardsData.filter(cardData => cardData.uid === cardId)[0].stage;
                                                 return (
-                                                    <div className={`rounded-full p-1 bg-${colorClasses[stage]}`}>
+                                                    <div key={cardId} className={`rounded-full p-1 bg-${colorClasses[stage]}`}>
                                                         {stage}#{cardId2number[cardId]}
                                                     </div>
                                                 );
@@ -56,7 +68,7 @@ export default function StageEvaluation({isExpanded, setIsExpanded, selectedCard
                         </div> 
                         <div className="mb-3">
                             <p>{
-                            selectedCardIds.map((cardId) => {
+                            validCardIds.map((cardId) => {
                                 const stage = cardsData.filter(cardData => cardData.uid === cardId)[0].stage;
                                 return stageEvaluationPrompts[stage] || "Briefly describe the issue of this stage:";
                             })}</p>
@@ -67,9 +79,11 @@ export default function StageEvaluation({isExpanded, setIsExpanded, selectedCard
                             />
                         </div>
                         <button className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => { addEvaluation(user.displayName || "Anonymous", selectedCardIds, { type: "stage", problem: problemText, }); resetTextInput(); setIsExpanded(); }}>
+                            disabled={saving || !problemText.trim() || !validCardIds.length}
+                            onClick={saveEvaluation}>
                             Submit
                         </button>
+                        {saveError && <p role="alert" className="text-sm text-red-600">{saveError}</p>}
                     </>
                 )}
             </div>

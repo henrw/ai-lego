@@ -73,11 +73,30 @@ const getBgColorClassFromId = (stage) => `bg-${colorClasses[stage]}`;
 export default function Card({ id, stage, number, handleDelete, text, comments, changeSelectedCardIds, selectedCardIds }) {
 
   const textAreaRef = useRef(null);
+  const projectId = useMyStore(store => store.projectId);
+  const isDemo = useMyStore(store => store.isDemo);
+  const draftKey = `card-draft-${projectId}-${id}`;
+  const draftRef = useRef(null);
+  const dirtyRef = useRef(false);
+  const saveTimerRef = useRef(null);
+  const saveDraft = async value => {
+    const ok = await useMyStore.getState().setCardDescription(id, value);
+    if (ok && draftRef.current === value) { dirtyRef.current = false; try { sessionStorage.removeItem(draftKey); } catch {} }
+  };
+  useEffect(() => {
+    try {
+      const recovered = sessionStorage.getItem(draftKey);
+      if (recovered !== null) { draftRef.current = recovered; dirtyRef.current = true; if (textAreaRef.current) textAreaRef.current.value = recovered; saveDraft(recovered); }
+    } catch {}
+    // Read the latest timer handle at cleanup, rather than the initial handle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => clearTimeout(saveTimerRef.current);
+  }, [draftKey]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!textAreaRef.current) {
       return;
     }
-    textAreaRef.current.value = text;
+    if (!dirtyRef.current) textAreaRef.current.value = text;
     textAreaRef.current.style.height = "auto";
     textAreaRef.current.style.height = textAreaRef.current.scrollHeight + "px";
   }, [id, text]);
@@ -114,24 +133,30 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
   const refreshLinks = useMyStore((store) => store.refreshLinks); // Add this function inside the Card component before the return statement
 
   const handleTextChange = (textArea, cardId) => {
-    useMyStore.getState().setCardDescription(cardId, textArea.value);
+    clearTimeout(saveTimerRef.current);
+    if (dirtyRef.current) saveDraft(textArea.value);
     textArea.style.height = textArea.scrollHeight + 'px';
   };
 
   const setTextWrapper = (text) => {
-    if (textAreaRef.current) {
-        textAreaRef.current.value = text;  // Update the text in the textarea
-        textAreaRef.current.style.height = "auto";  // Reset height to ensure the new height calculation is correct
-        textAreaRef.current.style.height = textAreaRef.current.scrollHeight + "px";  // Set the height to the scroll height
-    }
-}
+    if (!textAreaRef.current) return;
+    textAreaRef.current.value = text;
+    draftRef.current = text; dirtyRef.current = true;
+    try { sessionStorage.setItem(draftKey, text); } catch {}
+    clearTimeout(saveTimerRef.current);
+    if (isDemo) saveDraft(text); else saveTimerRef.current = setTimeout(() => saveDraft(text), 400);
+    textAreaRef.current.style.height = "auto";
+    textAreaRef.current.style.height = textAreaRef.current.scrollHeight + "px";
+  };
 
   const [showComments, setShowComments] = useState(false);
   const [showPrompt, setShowPrompt] = useState(false);
   const [selected, setSelected] = useState(false);
 
+  if (!cardData) return null;
   return (
     <Draggable
+      nodeRef={cardRef}
       ref={dragRef}
       onStop={handleStop}
       position={cardData.position}
@@ -227,7 +252,7 @@ export default function Card({ id, stage, number, handleDelete, text, comments, 
               <div className="overflow-y-auto overflow-x-hidden max-h-80 h-100">
                 {
                   comments.map((comment) => (
-                    <MessageBox key={comment.uid} commentId={comment.uid} time={typeof comment.lastUpdatedTime === 'string' ? comment.lastUpdatedTime : comment.lastUpdatedTime.toDate().toLocaleDateString('en-US') || "Now"} message={comment.text} />
+                    <MessageBox key={comment.uid} commentId={comment.uid} time={typeof comment.lastUpdatedTime === 'string' ? comment.lastUpdatedTime : comment.lastUpdatedTime?.toDate?.().toLocaleDateString('en-US') || "Now"} message={comment.text} />
                   ))
                 }
                 {

@@ -12,7 +12,7 @@ import { auth } from "../firebase";
 const userAuthContext = createContext();
 
 export function UserAuthContextProvider({ children }) {
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   function logIn(email, password) {
@@ -31,7 +31,6 @@ export function UserAuthContextProvider({ children }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentuser) => {
-      console.log("Auth", currentuser);
       setUser(currentuser);
       setLoading(false);
     });
@@ -41,9 +40,6 @@ export function UserAuthContextProvider({ children }) {
     };
   }, []);
 
-  if (loading) {
-      return <div>Loading...</div>; // Or any loading indicator you prefer
-  }
   return (
     <userAuthContext.Provider
       value={{ user, loading, logIn, signUp, logOut, googleSignIn }}

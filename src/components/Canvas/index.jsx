@@ -1,8 +1,11 @@
+import { v4 as uuid } from "uuid";
+import useDraft from "../../utils/useDraft";
+import useSessionState from "../../utils/useSessionState";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Block from "./Block";
 import useMyStore, { prompts } from "../../contexts/projectContext";
 import Xarrow from "react-xarrows";
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import StageEvaluation from "./Evaluation/StageEvaluation";
 import PersonaEvaluation from "./Evaluation/PersonaEvaluation";
 import CollaboratorModal from "./ui/CollaboratorModal";
@@ -16,11 +19,12 @@ import OpenAIKeyField from './ui/OpenAIKeyField';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 import { db, storage } from "../../firebase";
-import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, updateDoc } from "firebase/firestore";
 
 const Canvas = () => {
 
-  const { user, loading } = useUserAuth();
+  const isDemo = window.location.pathname === "/demo";
+  const { loading } = useUserAuth();
   // Collaborator modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const openModal = () => {
@@ -38,34 +42,35 @@ const Canvas = () => {
   const [selectedCardIds, setSelectedCardIds] = useState([]);
 
   const { projectId } = useParams();
-  const location = useLocation();
-
-  const queryParams = new URLSearchParams(location.search);
-
-  const usp = queryParams.get('usp');
   const linksPath = "smooth";
 
   const [hovered, setHovered] = useState("");
 
-  const [newPersona, setNewPersona] = useState(false);
-  const [candidatePersonas, setCandidatePersonas] = useState([]);
-  const [personaInputText, setPersonaInputText] = useState("");
+  const personaSessionKey = `persona-session-${isDemo ? "demo" : projectId}`;
+  const [newPersona, setNewPersona] = useSessionState(`${personaSessionKey}-open`, false);
+  const [candidatePersonas, setCandidatePersonas] = useSessionState(`${personaSessionKey}-candidates`, []);
+  const [personaInputText, setPersonaInputText, clearPersonaInput] = useDraft(`persona-draft-${isDemo ? "demo" : window.location.pathname}`);
   const personaInputTextRef = useRef(null);
 
   const setPersonaInputTextWrapper = (text) => {
     setPersonaInputText(text);
-    personaInputTextRef.current.style.height = "auto";
-    personaInputTextRef.current.style.height = personaInputTextRef.current.scrollHeight + "px";
+    if (personaInputTextRef.current) {
+      personaInputTextRef.current.style.height = "auto";
+      personaInputTextRef.current.style.height = personaInputTextRef.current.scrollHeight + "px";
+    }
   }
 
   const [isPersonaEvaluationExpanded, setIsPersonaEvaluationExpanded] = useState(false);
   const [isStageEvaluationExpanded, setIsStageEvaluationExpanded] = useState(false);
   const [isProblemEvaluationExpanded] = useState(false);
 
-  const [personas, setPersonas] = useState([]);
+  const savedPersonas = useMyStore(store => store.personas);
+  const [selectedPersonaId, setSelectedPersonaId] = useSessionState(`${personaSessionKey}-selected`, null);
+  const personas = savedPersonas.map(persona => ({ ...persona, isSelected: persona.uid === selectedPersonaId }));
+  const personaSubmissionRef = useRef(null);
   const [lastSelectedPersonaIndex, setLastSelectedPersonaIndex] = useState(null);
 
-  const [personaImgIdx, setPersonaImgIdx] = useState(0);
+  const [personaImgIdx, setPersonaImgIdx] = useSessionState(`${personaSessionKey}-image`, 0);
   const personaImgUrls = [
     "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2FSubject%205.png?alt=media",
     "https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2FSubject%206.png?alt=media",
@@ -74,12 +79,13 @@ const Canvas = () => {
   ]
 
   const addPersona = async () => {
-    setPersonas([...personas, {
-      imgUrl: personaImgUrls[personaImgIdx],
-      description: personaInputText,
-      isSelected: false
-    }]);
-  }
+    if (!personaInputText.trim()) return false;
+    personaSubmissionRef.current ||= `persona-${uuid()}`;
+    const ok = await useMyStore.getState().addPersona({ uid: personaSubmissionRef.current, imgUrl: personaImgUrls[personaImgIdx], description: personaInputText.trim() });
+    if (ok) { personaSubmissionRef.current = null; clearPersonaInput(); }
+    else setPersonaApiError("Could not save this persona. Your draft is retained; retry saving.");
+    return ok;
+  };
 
   const removeEnumerators = (text) => text.replace(/^(?:\d+\.\s+|-\s+)/gm, "");
 
@@ -112,6 +118,8 @@ const Canvas = () => {
     setApiPending(false);
   };
 
+  useEffect(() => () => personaAbortRef.current?.abort(), [isDemo, projectId]);
+
   const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "";
 
   const generatePersona = async () => {
@@ -125,6 +133,7 @@ const Canvas = () => {
     setApiPending(true);
     const controller = new AbortController();
     personaAbortRef.current = controller;
+    const timeout = setTimeout(() => controller.abort("timeout"), 55000);
 
     try {
       const response = await fetch(`${apiBaseUrl}/api/generate`, {
@@ -142,6 +151,7 @@ const Canvas = () => {
 
       if (response.ok) {
         const data = await response.json();
+        if (personaAbortRef.current !== controller) return;
         if (Array.isArray(data.res)) {
           setCandidatePersonas(data.res);
         } else {
@@ -152,13 +162,14 @@ const Canvas = () => {
         setPersonaApiError(data.error || "OpenAI could not generate personas. Check your API key and try again.");
       }
     } catch (error) {
-      if (error.name !== "AbortError") {
+      if (controller.signal.reason === "timeout") setPersonaApiError("The request timed out. Please retry.");
+      else if (error.name !== "AbortError") {
         console.error("Failed to fetch:", error);
         setPersonaApiError("The request could not be completed. Check your connection and try again.");
       }
     } finally {
-      setApiPending(false);
-      personaAbortRef.current = null;
+      clearTimeout(timeout);
+      if (personaAbortRef.current === controller) { setApiPending(false); personaAbortRef.current = null; }
     }
   };
 
@@ -170,8 +181,11 @@ const Canvas = () => {
 
   const canvasScale = useMyStore((store) => store.canvasScale);
   const addCardData = useMyStore((store) => store.addCardData);
-  const pullProject = useMyStore((store) => store.pullProject);
-  const cleanStore = useMyStore((store) => store.cleanStore);
+  const openProject = useMyStore((store) => store.openProject);
+  const loadingProject = useMyStore(store => store.loadingProject);
+  const loadError = useMyStore(store => store.loadError);
+  const saveError = useMyStore(store => store.saveError);
+  const saveStatus = useMyStore(store => store.saveStatus);
   const setProjectName = useMyStore((store) => store.setProjectName);
   const [isShiftPressed, setIsShiftPressed] = useState(false);
 
@@ -185,32 +199,9 @@ const Canvas = () => {
   let cardId2number = {}
 
 
-  const addCollaborator = useCallback(async () => {
-    try {
-      const userId = user?.uid;
-      const projectRef = doc(db, "projects", projectId);
-      try {
-        await updateDoc(projectRef, {
-          userIds: arrayUnion(userId)
-        });
-        const userDocRef = doc(db, "users", userId);
-        await updateDoc(userDocRef, {
-          projectIds: arrayUnion(projectId)
-        });
-      } catch (error) {
-        console.error("Error adding user ID to project: ", error);
-      }
-
-    } catch (error) {
-      console.error("Error getting documents: ", error);
-    }
-  }, [projectId, user?.uid]);
-
   useEffect(() => {
-    cleanStore(projectId);
-    pullProject(projectId);
-
-    if (usp === "sharing") addCollaborator();
+    const unsubscribe = openProject(projectId, isDemo);
+    setSelectedCardIds([]); setLastSelectedPersonaIndex(null);
     const handleKeyDown = (event) => {
       if (event.key === 'Shift') {
         setIsShiftPressed(true);
@@ -224,14 +215,18 @@ const Canvas = () => {
       }
     };
 
+    const resetShift = () => setIsShiftPressed(false);
+    window.addEventListener('blur', resetShift);
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
 
     return () => {
+      unsubscribe();
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', resetShift);
     };
-  }, [addCollaborator, cleanStore, pullProject, projectId, usp]);
+  }, [openProject, projectId, isDemo]);
 
 
   const changeSelectedCardIds = (cardId) => {
@@ -261,14 +256,10 @@ const Canvas = () => {
   }
 
   function togglePersonaSelection(idx) {
-    const newPersonas = personas.map((persona, i) => ({
-      ...persona,
-      isSelected: i === idx ? !persona.isSelected : false,
-    }));
-    if (newPersonas[idx].isSelected) {
-      setLastSelectedPersonaIndex(idx);
-    }
-    setPersonas(newPersonas);
+    const persona = personas[idx];
+    if (!persona) return;
+    setSelectedPersonaId(selectedPersonaId === persona.uid ? null : persona.uid);
+    setLastSelectedPersonaIndex(idx);
   }
 
   useEffect(() => {
@@ -277,13 +268,8 @@ const Canvas = () => {
     if (personas.some((persona) => persona.isSelected)) return;
     if (lastSelectedPersonaIndex === null) return;
     if (!personas[lastSelectedPersonaIndex]) return;
-    setPersonas((prev) =>
-      prev.map((persona, i) => ({
-        ...persona,
-        isSelected: i === lastSelectedPersonaIndex,
-      }))
-    );
-  }, [isPersonaEvaluationExpanded, lastSelectedPersonaIndex, personas]);
+    setSelectedPersonaId(personas[lastSelectedPersonaIndex].uid);
+  }, [isPersonaEvaluationExpanded, lastSelectedPersonaIndex, personas, setSelectedPersonaId]);
 
   function dataURLtoBlob(dataurl) {
     const arr = dataurl.split(',');
@@ -313,18 +299,33 @@ const Canvas = () => {
     }
   }, [projectId, uploadImageToStorage]);
 
-  const saveSnapshot = useCallback(() => {
-    captureElement().then((imageDataURL) => {
-      saveImageToFirestore(imageDataURL);
-    });
-  }, [saveImageToFirestore]);
+  const snapshotRunningRef = useRef(false);
+  const lastSnapshotRef = useRef("");
+  const snapshotProjectRef = useRef(projectId);
+  snapshotProjectRef.current = projectId;
   useEffect(() => {
-    if (cardsData.length !== 0) {
-      saveSnapshot();
-    }
-  }, [cardsData, saveSnapshot]);
+    if (isDemo || loadingProject || !projectId || !cardsData.length) return;
+    const signature = JSON.stringify(cardsData.map(card => ({ uid: card.uid, description: card.description, position: card.position })));
+    if (lastSnapshotRef.current === signature) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (snapshotRunningRef.current) return;
+      snapshotRunningRef.current = true;
+      try {
+        const imageDataURL = await captureElement();
+        if (!cancelled && snapshotProjectRef.current === projectId) {
+          await saveImageToFirestore(imageDataURL);
+          lastSnapshotRef.current = signature;
+        }
+      } catch (error) { console.error("Could not save project preview:", error); }
+      finally { snapshotRunningRef.current = false; }
+    }, 2500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [cardsData, loadingProject, projectId, isDemo, saveImageToFirestore]);
 
-  if (loading) return <div></div>;
+  if (!isDemo && loading) return <div></div>;
+  if (loadingProject) return <div className="pt-24 px-4" role="status">Loading project…</div>;
+  if (loadError) return <div className="pt-24 px-4" role="alert">{loadError} <button onClick={() => openProject(projectId, isDemo)}>Retry</button></div>;
 
   return (
     <>
@@ -381,18 +382,20 @@ const Canvas = () => {
           placeholder="Enter Project Name"
           size={Math.min(Math.max(projectName.length, 16), 60)}
         />
-        <button
+        {!isDemo && <button
           onClick={openModal}
           className="ml-1 bg-blue-500 hover:bg-blue-700 text-white py-2 px-3 rounded">
           Share
-        </button>
+        </button>}
       </div>
 
-      <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />
+      {!isDemo && <CollaboratorModal isOpen={isModalOpen} onClose={closeModal} />}
+      {saveError && <div role="alert" className="fixed top-32 left-4 z-20 bg-white p-2 text-sm text-red-600">{saveError} <button onClick={() => useMyStore.getState().retrySaves()}>Retry</button></div>}
+      {saveStatus === "saving" && <span role="status" className="fixed top-32 left-4 z-20 text-sm bg-white p-1">Saving…</span>}
 
       <p className="fixed bottom-[125px] right-6 font-bold text-lg z-10">Evaluation:</p>
-      <StageEvaluation isExpanded={isStageEvaluationExpanded} setIsExpanded={setIsStageEvaluationExpanded} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
-      <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={setIsPersonaEvaluationExpanded} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} selectedPersona={personas.filter(item => item.isSelected === true)} openAiApiKey={openAiApiKey} setOpenAiApiKey={setOpenAiApiKey} />
+      <StageEvaluation key={`stage-${isDemo ? "demo" : projectId}`} isExpanded={isStageEvaluationExpanded} setIsExpanded={expanded => { setIsStageEvaluationExpanded(expanded); if (expanded) setIsPersonaEvaluationExpanded(false); }} selectedCardIds={[...selectedCardIds]} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} />
+      <PersonaEvaluation isExpanded={isPersonaEvaluationExpanded} setIsExpanded={expanded => { setIsPersonaEvaluationExpanded(expanded); if (expanded) setIsStageEvaluationExpanded(false); }} number={evaluations.length} cardsData={cardsData} cardId2number={cardId2number} key={`persona-${isDemo ? "demo" : projectId}`} selectedPersona={personas.filter(item => item.isSelected === true)} openAiApiKey={openAiApiKey} setOpenAiApiKey={setOpenAiApiKey} />
 
       <MiniMap />
 
@@ -408,7 +411,7 @@ const Canvas = () => {
         <div className="flex flex-row justify-end">
           {
             personas.map((persona, index) => (
-              <PersonaIcon imgUrl={persona.imgUrl} description={persona.description} isSelected={persona.isSelected} toggleFunction={togglePersonaSelection} idx={index} />
+              <PersonaIcon key={persona.uid} personaId={persona.uid} imgUrl={persona.imgUrl || personaImgUrls[index % personaImgUrls.length]} description={persona.description} isSelected={persona.isSelected} toggleFunction={togglePersonaSelection} idx={index} />
             ))
           }
 
@@ -497,7 +500,8 @@ const Canvas = () => {
                 </button>
               )}
               <button
-                onClick={() => { addPersona(); setPersonaInputTextWrapper(""); setNewPersona(false) }}
+                disabled={!personaInputText.trim() || apiPending}
+                onClick={async () => { if (await addPersona()) setNewPersona(false); }}
                 type="button"
                 className="ml-2 text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2.5 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
               >
@@ -514,9 +518,8 @@ const Canvas = () => {
             <p className="font-bold text-lg mb-2">AI LEGO Blocks:</p>
             {
               ["problem", "task", "data", "model", "train", "test", "deploy", "feedback"].map((stage, index) => (
-                <div className="relative">
+                <div className="relative" key={stage}>
                   <button
-                    key={index}
                     onClick={() => addCardData(stage)}
                     onMouseEnter={() => setHovered(stage)}
                     onMouseLeave={() => setHovered("")}

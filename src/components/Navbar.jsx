@@ -5,26 +5,12 @@ import { Link, useLocation } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
-import { useNavigate } from "react-router";
 
 const Navbar = () => {
   const { user } = useUserAuth();
   const location = useLocation();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [userDetails, setUserDetails] = useState({});
-
-  const { logIn } = useUserAuth();
-  const navigate = useNavigate();
-
-  const handleTestLogin = async (e) => {
-    e.preventDefault();
-    try {
-      await logIn("tester@ailego.com", "123456");
-      navigate("/home");
-    } catch (err) {
-      // setError(err.message);
-    }
-  };
 
   // Fetch user details from Firestore
   useEffect(() => {
@@ -38,7 +24,7 @@ const Navbar = () => {
           // console.log("No such document!");
         }
       };
-      fetchUserDetails();
+      fetchUserDetails().catch(() => setUserDetails({}));
     }
   }, [user]);
 
@@ -135,7 +121,7 @@ const Navbar = () => {
               </div>
             )}
             <Link
-              onClick={handleTestLogin}
+              to="/demo"
               className="text-lg text-gray-700 hover:text-blue-500 transition-colors duration-200"
             >
               {isOnCanvas ? "Get Registered" : "Test Around Without Login"}

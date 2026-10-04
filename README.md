@@ -45,9 +45,23 @@ A collaborative canvas web tool for cross-functional teams to identify and addre
 
 - **Canvas**: An infinite scrolling workspace where users place and connect stage cards.
 - **Stage Cards**: Each card represents one phase of an AI pipeline. Cards link together to form a development plan.
-- **Personas**: Stakeholder profiles (manually created or AI-generated) that can be used to simulate impact assessments.
+- **Personas**: Stakeholder profiles (manually created or AI-generated), persisted with stable IDs so profiles and their evaluations survive refresh.
 - **Evaluations**: Text annotations on cards — either stage-level (user-written) or persona-level (AI-generated via GPT-4 streaming).
-- **Snapshots**: The canvas is automatically captured as an image and stored in Firebase Storage whenever cards change.
+- **Snapshots**: Canvas previews are automatically captured after card changes settle, with debouncing and one capture at a time.
+
+## Reliability
+
+The original canvas UI and interactions are preserved. Visitor entry opens an isolated browser copy at `/demo`, rather than signing everyone into one shared account. Demo changes stay in browser storage; signed-in projects use Firebase. Existing demo data can be cleared by removing the `ai-lego-demo-v1` browser-storage entry.
+
+Project, card, comment, and evaluation subscriptions update shared projects live and are cleaned up when leaving. Atomic writes keep document references and membership updates together. Stage descriptions and evaluation drafts survive refresh through session storage; forms clear only after a successful save. Failed writes expose retry feedback. API keys remain in memory only.
+
+AI requests handle empty responses, interrupted streams, network errors, cancellation, and timeouts without leaving generation controls stuck. Local live AI calls require `vercel dev`; `npm start` serves the interface alone. Sharing a URL does not automatically add project membership; invite collaborators explicitly using the existing Share dialog. Deployed Firebase rules still determine access.
+
+```bash
+CI=true npm test -- --watch=false --runInBand
+node --test tests/api.test.mjs
+npm run build
+```
 
 ## Deployment
 

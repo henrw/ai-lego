@@ -1,181 +1,66 @@
 import React, { useEffect, useRef, useState } from "react";
+import { v4 as uuid } from "uuid";
 import { useUserAuth } from "../../../authentication/UserAuthContext";
 import useMyStore from "../../../contexts/projectContext";
 import OpenAIKeyField from "../ui/OpenAIKeyField";
+import useDraft from "../../../utils/useDraft";
+import { readAIResponse } from "../../../utils/aiResponse";
 
-export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedCardIds, number, cardsData, cardId2number, selectedPersona, openAiApiKey, setOpenAiApiKey }) {
+export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedPersona, cardsData, openAiApiKey, setOpenAiApiKey }) {
     const { user } = useUserAuth();
-
+    const projectId = useMyStore(store => store.projectId);
+    const addEvaluation = useMyStore(store => store.addEvaluation);
+    const personaId = selectedPersona[0]?.uid || selectedPersona[0]?.description || "none";
+    const [personaEvalText, setPersonaEvalText, resetTextInput] = useDraft(`evaluation-persona-${projectId}-${personaId}`);
     const [apiPending, setApiPending] = useState(false);
     const [isStreaming, setIsStreaming] = useState(false);
-    const personaAbortRef = useRef(null);
-    const streamTickerRef = useRef(null);
-    const streamTargetRef = useRef("");
-    const streamDisplayIndexRef = useRef(0);
-    const streamCompleteRef = useRef(false);
-    const streamStartTimeRef = useRef(0);
-    const [personaEvalText, setPersonaEvalText] = useState("");
+    const [saving, setSaving] = useState(false);
     const [apiError, setApiError] = useState("");
+    const personaAbortRef = useRef(null);
+    const submissionRef = useRef(null);
     const textAreaRef = useRef(null);
     const shouldAutoScrollRef = useRef(true);
-
     const togglePanel = () => setIsExpanded(!isExpanded);
-    const addEvaluation = useMyStore((store) => store.addEvaluation);
-
-    const resetTextInput = () => {
-        setPersonaEvalText("");
-    }
-
+    useEffect(() => {
+        setApiPending(false); setIsStreaming(false); setApiError(""); submissionRef.current = null;
+        return () => { personaAbortRef.current?.abort(); personaAbortRef.current = null; };
+    }, [projectId, personaId]);
     useEffect(() => {
         if (!textAreaRef.current) return;
         const maxHeight = Math.floor(window.innerHeight * (isStreaming ? 0.35 : 0.6));
         textAreaRef.current.style.height = "auto";
-        const nextHeight = Math.min(textAreaRef.current.scrollHeight, maxHeight);
-        textAreaRef.current.style.height = `${nextHeight}px`;
+        textAreaRef.current.style.height = `${Math.min(textAreaRef.current.scrollHeight, maxHeight)}px`;
         textAreaRef.current.style.overflowY = textAreaRef.current.scrollHeight > maxHeight ? "auto" : "hidden";
-        if (shouldAutoScrollRef.current) {
-            textAreaRef.current.scrollTop = textAreaRef.current.scrollHeight;
-        }
-    }, [personaEvalText, isStreaming]);
-
-    const startStreamTicker = () => {
-        if (streamTickerRef.current) return;
-        const streamWpm = 600;
-        const avgCharsPerWord = 6;
-        const charsPerMs = (streamWpm * avgCharsPerWord) / 60000;
-        const tickMs = 50;
-        streamStartTimeRef.current = 0;
-        streamTickerRef.current = setInterval(() => {
-            const target = streamTargetRef.current || "";
-            if (streamStartTimeRef.current === 0 && target.length > 0) {
-                streamStartTimeRef.current = Date.now();
-            }
-            if (streamStartTimeRef.current === 0) {
-                return;
-            }
-            const elapsedMs = Date.now() - streamStartTimeRef.current;
-            const desiredLength = Math.floor(elapsedMs * charsPerMs);
-            if (desiredLength > streamDisplayIndexRef.current) {
-                streamDisplayIndexRef.current = Math.min(desiredLength, target.length);
-                setPersonaEvalText(target.slice(0, streamDisplayIndexRef.current));
-            }
-            if (streamCompleteRef.current) {
-                if (streamDisplayIndexRef.current >= target.length) {
-                    clearInterval(streamTickerRef.current);
-                    streamTickerRef.current = null;
-                    setIsStreaming(false);
-                    setApiPending(false);
-                }
-            }
-        }, tickMs);
-    };
-
-    const stopPersonaEvaluation = () => {
-        if (personaAbortRef.current) {
-            personaAbortRef.current.abort();
-            personaAbortRef.current = null;
-        }
-        if (streamTickerRef.current) {
-            clearInterval(streamTickerRef.current);
-            streamTickerRef.current = null;
-        }
-        streamTargetRef.current = "";
-        streamDisplayIndexRef.current = 0;
-        streamCompleteRef.current = true;
-        setApiPending(false);
-        setIsStreaming(false);
-    };
-
+        if (shouldAutoScrollRef.current) textAreaRef.current.scrollTop = textAreaRef.current.scrollHeight;
+    }, [personaEvalText, isStreaming, isExpanded]);
+    const stopPersonaEvaluation = () => { personaAbortRef.current?.abort("stopped"); };
     const evaluatePersona = async () => {
-        if (apiPending) return;
-        if (!openAiApiKey) {
-            setApiError("Enter your OpenAI API key before running the simulation.");
-            return;
-        }
-        setApiError("");
-        setApiPending(true);
-        setIsStreaming(true);
-        streamTargetRef.current = "";
-        streamDisplayIndexRef.current = 0;
-        streamCompleteRef.current = false;
-        streamStartTimeRef.current = 0;
-        shouldAutoScrollRef.current = true;
-        setPersonaEvalText("");
-        startStreamTicker();
-        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || "";
-        const controller = new AbortController();
-        personaAbortRef.current = controller;
-
+        if (apiPending || selectedPersona.length !== 1) return;
+        if (!openAiApiKey) { setApiError("Enter your OpenAI API key before running the simulation."); return; }
+        const controller = new AbortController(); personaAbortRef.current = controller;
+        const timeout = setTimeout(() => controller.abort("timeout"), 55000);
+        setApiPending(true); setIsStreaming(true); setApiError("");
         try {
-            const response = await fetch(`${apiBaseUrl}/api/evaluate?stream=1`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Accept: "text/event-stream",
-                    Authorization: `Bearer ${openAiApiKey}`,
-                },
-                body: JSON.stringify({
-                    personaDescription: selectedPersona[0].description,
-                    cardsData: cardsData,
-                    stream: true
-                }),
-                signal: controller.signal,
+            const response = await fetch(`${process.env.REACT_APP_API_BASE_URL || ""}/api/evaluate?stream=1`, {
+                method: "POST", headers: { "Content-Type": "application/json", Accept: "text/event-stream", Authorization: `Bearer ${openAiApiKey}` },
+                body: JSON.stringify({ personaDescription: selectedPersona[0].description, cardsData, stream: true }), signal: controller.signal,
             });
-
-            const contentType = response.headers.get("content-type") || "";
-            const shouldStream = response.ok && response.body && (contentType.includes("text/event-stream") || response.headers.get("x-stream") === "1");
-            if (shouldStream) {
-                setIsStreaming(true);
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = "";
-                let fullText = "";
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    const events = buffer.split("\n\n");
-                    buffer = events.pop() || "";
-                    for (const event of events) {
-                        const line = event.split("\n").find(l => l.startsWith("data: "));
-                        if (!line) continue;
-                        const data = line.slice("data: ".length);
-                        if (data === "[DONE]") {
-                            streamCompleteRef.current = true;
-                            return;
-                        }
-                        try {
-                            const json = JSON.parse(data);
-                            const content = json.choices?.[0]?.delta?.content;
-                            if (content) {
-                                fullText += content;
-                                streamTargetRef.current = fullText;
-                            }
-                        } catch { /* ignore malformed chunks */ }
-                    }
-                }
-                streamCompleteRef.current = true;
-                return;
-            }
-
-            if (response.ok) {
-                const data = await response.json();
-                streamTargetRef.current = data.res || "";
-                streamCompleteRef.current = true;
-            } else {
-                const data = await response.json().catch(() => ({}));
-                setApiError(data.error || "OpenAI could not evaluate this persona. Check your API key and try again.");
-                streamCompleteRef.current = true;
-            }
+            await readAIResponse(response, text => { if (personaAbortRef.current === controller) setPersonaEvalText(text); });
         } catch (error) {
-            if (error.name !== "AbortError") {
-                console.error("Failed to fetch:", error);
-                setApiError("The request could not be completed. Check your connection and try again.");
-            }
-            streamCompleteRef.current = true;
+            if (personaAbortRef.current === controller) setApiError(controller.signal.aborted ? controller.signal.reason === "timeout" ? "The request timed out. Your text is retained; retry the simulation." : "Simulation stopped. Your text is retained." : error.message || "Check your connection and try again.");
         } finally {
-            personaAbortRef.current = null;
+            clearTimeout(timeout);
+            if (personaAbortRef.current === controller) { personaAbortRef.current = null; setApiPending(false); setIsStreaming(false); }
         }
+    };
+    const saveEvaluation = async () => {
+        if (saving || apiPending || !personaEvalText.trim() || selectedPersona.length !== 1) return;
+        setSaving(true); setApiError(""); submissionRef.current ||= `evaluation-${uuid()}`;
+        const persona = selectedPersona[0];
+        const ok = await addEvaluation(user?.displayName || "Anonymous", [], { uid: submissionRef.current, type: "persona", ...(persona.uid ? { personaId: persona.uid } : {}), personaDescription: persona.description, problem: personaEvalText.trim() });
+        setSaving(false);
+        if (ok) { resetTextInput(); submissionRef.current = null; setIsExpanded(false); }
+        else setApiError("Your evaluation could not be saved. The draft is retained; retry saving.");
     };
 
     return (
@@ -240,6 +125,8 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                                 ref={textAreaRef}
                                 className="w-full border border-gray-300 p-2 mb-2 rounded min-h-[160px] resize-y"
                                 value={personaEvalText}
+                                aria-label="Persona evaluation text"
+                                disabled={apiPending || saving}
                                 onChange={(e) => setPersonaEvalText(e.target.value)}
                                 onScroll={() => {
                                     if (!textAreaRef.current) return;
@@ -250,13 +137,8 @@ export default function PersonaEvaluation({ isExpanded, setIsExpanded, selectedC
                         </div>
                         <button
                             className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-                            onClick={() => {
-                                const author = user?.displayName || "Anonymous";
-                                const personaDescription = selectedPersona[0]?.description || "Unknown persona";
-                                addEvaluation(author, [], { type: "persona", personaDescription, problem: personaEvalText });
-                                resetTextInput();
-                                setIsExpanded();
-                            }}
+                            disabled={saving || apiPending || !personaEvalText.trim() || selectedPersona.length !== 1}
+                            onClick={saveEvaluation}
                         >
                             Save
                         </button>

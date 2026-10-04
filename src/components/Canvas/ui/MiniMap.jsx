@@ -1,5 +1,5 @@
 import useMyStore, { colorClasses } from "../../../contexts/projectContext";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function MiniMap() {
     const cardsData = useMyStore((store) => store.cards);
@@ -16,12 +16,21 @@ export default function MiniMap() {
         setViewportPosition({ x: window.scrollX, y: window.scrollY });
     };
 
-    window.addEventListener('scroll', handleScroll);
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        window.addEventListener('resize', handleScroll);
+        handleScroll();
+        return () => { window.removeEventListener('scroll', handleScroll); window.removeEventListener('resize', handleScroll); };
+    }, []);
 
     return (
         <div className="fixed z-10 bottom-2 left-1/2 w-[10%] h-[10%] bg-gray-100 transform -translate-x-1/2"
             onMouseDown={(e) => {
-                window.scrollTo(Math.max(((e.clientX - window.innerWidth * 0.45) / (window.innerWidth * 0.1)) * window.innerWidth, 0), Math.max(((e.clientY - window.innerHeight * 0.9 + 8) / (window.innerHeight * 0.1)) * window.innerHeight, 0));
+                const bounds = e.currentTarget.getBoundingClientRect();
+                window.scrollTo(
+                    Math.max((e.clientX - bounds.left) / bounds.width * window.innerWidth * canvasScale.x - window.innerWidth / 2, 0),
+                    Math.max((e.clientY - bounds.top) / bounds.height * window.innerHeight * canvasScale.y - window.innerHeight / 2, 0)
+                );
             }}
         >
             {cardsData.map(card => (

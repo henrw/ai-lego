@@ -1,8 +1,8 @@
-import { produce } from "immer";
+import { v4 as uuid } from "uuid";
 import { createWithEqualityFn } from "zustand/traditional";
-import { devtools } from "zustand/middleware";
 import { db } from "../firebase";
-import { doc, getDoc, updateDoc, addDoc, collection, arrayUnion, serverTimestamp, deleteDoc } from "firebase/firestore";
+import { doc, collection, onSnapshot, arrayUnion, arrayRemove, serverTimestamp, writeBatch, updateDoc, runTransaction } from "firebase/firestore";
+import { createDemoProject, DEMO_STORAGE_KEY } from "../demo/scenario";
 
 export const prompts = {
   problem:
@@ -42,390 +42,278 @@ export const stageEvaluationPrompts = {
   problem: "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
   task: "What are the boundaries and limitations of what the AI solution is expected to achieve?",
   data: "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
-  model: "Is the choice of models, proxities, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+  model: "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
   train: "Can you think of ways the training process might go wrong? If so, how?",
   test: "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
   deploy: "Does the deployment of the AI fit with the real-world practical use environments?",
   feedback: "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
 };
 
-const myStore = (set) => ({
-  projectName: "",
-  projectId: "",
-  cards: [],
-  links: [],
-  evaluations: [],
-  canvasScale: { x: 1.1, y: 1.1 },
-  isRescaled: false,
+const emptyProject = { projectName: "", projectId: "", cards: [], links: [], evaluations: [], personas: [], canvasScale: { x: 1.1, y: 1.1 }, isRescaled: false };
+let disposeProject = () => {};
+let generation = 0;
+const failedWrites = new Map();
+const pendingWrites = new Set();
+const draftDescriptions = new Map();
+const writeVersions = new Map();
+const writeQueues = new Map();
+const pendingPersonas = new Map();
+const personaRecoveryKey = projectId => `ai-lego-pending-personas-${projectId}`;
+function readPendingPersonas(projectId) {
+  try {
+    const values = JSON.parse(localStorage.getItem(personaRecoveryKey(projectId)) || "[]");
+    return Array.isArray(values) ? values.filter(value => value.uid && typeof value.description === "string") : [];
+  } catch { return []; }
+}
+function cachePersona(projectId, value) {
+  localStorage.setItem(personaRecoveryKey(projectId), JSON.stringify(replaceById(readPendingPersonas(projectId), value)));
+}
+async function savePersona(ref, projectId, value, epoch) {
+  await updateDoc(ref, { personas: arrayUnion(value), lastUpdatedTime: serverTimestamp() });
+  // Only a successful server write can discard the refresh recovery copy.
+  try {
+    const remaining = readPendingPersonas(projectId).filter(item => item.uid !== value.uid || JSON.stringify(item) !== JSON.stringify(value));
+    if (remaining.length) localStorage.setItem(personaRecoveryKey(projectId), JSON.stringify(remaining));
+    else localStorage.removeItem(personaRecoveryKey(projectId));
+  } catch { /* Retrying an acknowledged arrayUnion is safe. */ }
+  if (epoch === generation && pendingPersonas.get(value.uid) === value) pendingPersonas.delete(value.uid);
+}
 
-  extendCanvasRight: async () => {
-    const totalPageWidth = document.documentElement.scrollWidth;
-    const viewportWidth = window.innerWidth;
-    set((state) => ({
-      ...state,
-      canvasScale: { x: totalPageWidth / viewportWidth, y: state.canvasScale.y },
-      isRescaled: true,
-    }));
-  },
-  extendCanvasBottom: async () => {
-    const totalPageHeight = document.documentElement.scrollHeight;
-    const viewportHeight = window.innerHeight;
-    set((state) => ({
-      ...state,
-      canvasScale: { x: state.canvasScale.x, y: totalPageHeight / viewportHeight },
-      isRescaled: true,
-    }));
-  },
-
-
-  pullProject: async (projectId) => {
-    const projectDocSnap = await getDoc(doc(db, "projects", projectId));
-    if (!projectDocSnap.exists()) {
-      console.error("Project not found:", projectId);
-      return;
+function reportSaveState() {
+  useMyStore.setState({ saveStatus: failedWrites.size ? "error" : pendingWrites.size ? "saving" : "saved", saveError: failedWrites.size ? "Some changes could not be saved. Your draft is still here. Retry saving." : "" });
+}
+// Each retry keeps the original operation and document ID. Newer edits replace older retries.
+async function persist(key, action) {
+  const epoch = generation;
+  const version = (writeVersions.get(key) || 0) + 1;
+  writeVersions.set(key, version);
+  const ticket = {};
+  pendingWrites.add(ticket);
+  failedWrites.delete(key);
+  reportSaveState();
+  try {
+    if (useMyStore.getState().isDemo) {
+      const { projectName, projectId, cards, links, evaluations, personas, canvasScale } = useMyStore.getState();
+      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ projectName, projectId, cards, links, evaluations, personas, canvasScale }));
+    } else {
+      const previous = writeQueues.get(key) || Promise.resolve();
+      const task = previous.catch(() => {}).then(action);
+      writeQueues.set(key, task);
+      await task;
+      if (writeQueues.get(key) === task) writeQueues.delete(key);
     }
+    return true;
+  } catch (error) {
+    if (epoch === generation && writeVersions.get(key) === version) failedWrites.set(key, () => persist(key, action));
+    return false;
+  } finally {
+    if (epoch === generation) { pendingWrites.delete(ticket); reportSaveState(); }
+  }
+}
+function projectRef() {
+  const { projectId } = useMyStore.getState();
+  if (!projectId) throw new Error("Open a project before editing.");
+  return doc(db, "projects", projectId);
+}
+function newId(kind) { return useMyStore.getState().isDemo ? `${kind}-${uuid()}` : doc(collection(db, kind)).id; }
+function now() { return useMyStore.getState().isDemo ? new Date().toISOString() : serverTimestamp(); }
+function replaceById(items, item) { return items.some(old => old.uid === item.uid) ? items.map(old => old.uid === item.uid ? item : old) : [...items, item]; }
 
-    const projectData = projectDocSnap.data();
-    let cards = [];
-    if (projectData.cards !== undefined) {
-      const cardFetchPromises = projectData.cards.map(cardId =>
-        getDoc(doc(db, "cards", cardId)).then(cardDocSnap => cardDocSnap.data())
-      );
-      cards = await Promise.all(cardFetchPromises);
-      cards.sort((a, b) => b.createdAt - a.createdAt);
-
-
-      for (const card of cards) {
-        let comments = [];
-        if (card.comments !== undefined) {
-          const commentsFetchPromises = card.comments.map(commentId =>
-            getDoc(doc(db, "comments", commentId)).then(commentDocSnap => commentDocSnap.data())
-          );
-          comments = await Promise.all(commentsFetchPromises);
+const useMyStore = createWithEqualityFn((set, get) => ({
+  ...emptyProject, isDemo: false, loadingProject: false, loadError: "", saveStatus: "saved", saveError: "",
+  retrySaves: async () => { await Promise.all([...failedWrites.values()].map(retry => retry())); },
+  openProject: (projectId, isDemo = false) => {
+    disposeProject(); generation += 1; pendingWrites.clear(); failedWrites.clear(); draftDescriptions.clear(); writeVersions.clear(); writeQueues.clear(); pendingPersonas.clear();
+    set({ ...emptyProject, projectId: projectId || "", isDemo, loadingProject: true, loadError: "", saveStatus: "saved", saveError: "" });
+    const epoch = generation;
+    if (isDemo) {
+      let data = createDemoProject();
+      try {
+        const saved = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY));
+        if (saved && saved.projectId === "demo" && Array.isArray(saved.cards) && saved.cards.every(card => card.uid && card.position && card.stage) && Array.isArray(saved.links) && Array.isArray(saved.personas) && Array.isArray(saved.evaluations)) data = saved;
+      } catch { /* A corrupt demo can always be reopened from the curated scenario. */ }
+      set({ ...data, loadingProject: false });
+      disposeProject = () => {};
+      return disposeProject;
+    }
+    if (!projectId) { set({ loadingProject: false, loadError: "Choose a project from your home page." }); return () => {}; }
+    const recoveredPersonas = readPendingPersonas(projectId);
+    recoveredPersonas.forEach(persona => pendingPersonas.set(persona.uid, persona));
+    set({ personas: recoveredPersonas });
+    let resumedPersonaSaves = false;
+    const watchers = new Map();
+    const received = { cards: new Set(), evaluations: new Set() };
+    let expected = { cards: [], evaluations: [] };
+    const updateLoading = () => { if (epoch === generation) set({ loadingProject: Object.keys(expected).some(kind => expected[kind].some(id => !received[kind].has(id))) }); };
+    let projectUnsubscribe;
+    const fail = () => { if (epoch === generation) set({ loadingProject: false, loadError: "Could not load this project. Check your connection and project access, then retry." }); };
+    const watch = (kind, ids) => {
+      const field = kind === "cards" ? "cards" : "evaluations";
+      const wanted = new Set(ids);
+      for (const [key, unsubscribe] of watchers) {
+        if (key.startsWith(kind + "/") && !wanted.has(key.slice(kind.length + 1))) { unsubscribe(); watchers.delete(key); received[kind].delete(key.slice(kind.length + 1));
+          if (kind === "cards") for (const [commentKey, stop] of watchers) { if (commentKey.startsWith(`comments/${key.slice(kind.length + 1)}/`)) { stop(); watchers.delete(commentKey); } }
         }
-        card.comments = comments;
-      };
-    }
-    let evaluations = [];
-    if (projectData.evaluations !== undefined) {
-      const evaluationFetchPromises = projectData.evaluations.map(evaluationId =>
-        getDoc(doc(db, "evaluations", evaluationId)).then(evaluationDocSnap => evaluationDocSnap.data())
-      );
-      evaluations = await Promise.all(evaluationFetchPromises);
-    }
-
-    set(state => ({
-      ...state,
-      projectName: projectData.name,
-      projectId: projectId,
-      links: projectData.links,
-      cards: cards,
-      evaluations: evaluations,
-      canvasScale: projectData.canvasScale || { x: 1.1, y: 1.1 },
-      isRescaled: false,
-    }));
-  },
-
-  addComment: async (username, cardId, text) => {
-    const { projectId } = useMyStore.getState();
-    if (projectId == null) {
-      throw new Error("null projectId");
-    }
-
-    const newComment = {
-      projectId: projectId,
-      cardId: cardId,
-      by: username,
-      uid: "", // Temporarily empty, will be filled with doc I
-      text: text,
-      lastUpdatedTime: "Now"
-    };
-
-    try {
-      const commentDocRef = await addDoc(collection(db, "comments"), newComment);
-
-      useMyStore.setState(produce((store) => {
-        const cardToUpdate = store.cards.find((card) => card.uid === cardId);
-        if (cardToUpdate) {
-          newComment.uid = commentDocRef.id;
-          cardToUpdate.comments.push(newComment);
-        }
-      }));
-
-      await updateDoc(commentDocRef, { uid: commentDocRef.id, lastUpdatedTime: serverTimestamp() }); // Update the card with its UID
-
-      await updateDoc(doc(db, "cards", cardId), {
-        comments: arrayUnion(commentDocRef.id),
+      }
+      set(state => ({ [field]: state[field].filter(item => wanted.has(item.uid)) }));
+      ids.forEach(id => {
+        const key = `${kind}/${id}`;
+        if (watchers.has(key)) return;
+        watchers.set(key, onSnapshot(doc(db, kind, id), snapshot => {
+          if (epoch !== generation || !expected[kind].includes(id)) return;
+          received[kind].add(id);
+          if (!snapshot.exists()) { set(state => ({ [field]: state[field].filter(item => item.uid !== id) })); updateLoading(); return; }
+          const item = { ...snapshot.data(), uid: id };
+          if (kind === "cards") {
+            item.position = item.position || { x: 180, y: 50 };
+            item.comments = get().cards.find(card => card.uid === id)?.comments || [];
+            if (draftDescriptions.has(id)) item.description = draftDescriptions.get(id);
+            const commentIds = snapshot.data().comments || [];
+            const prefix = `comments/${id}/`;
+            for (const [commentKey, unsubscribe] of watchers) {
+              if (commentKey.startsWith(prefix) && !commentIds.includes(commentKey.slice(prefix.length))) { unsubscribe(); watchers.delete(commentKey); }
+            }
+            item.comments = item.comments.filter(comment => commentIds.includes(comment.uid));
+            set(state => ({ cards: replaceById(state.cards, item) }));
+            commentIds.forEach(commentId => {
+              const commentKey = prefix + commentId;
+              if (watchers.has(commentKey)) return;
+              watchers.set(commentKey, onSnapshot(doc(db, "comments", commentId), commentSnap => {
+                if (epoch !== generation) return;
+                set(state => ({ cards: state.cards.map(card => card.uid === id ? { ...card, comments: commentSnap.exists() ? replaceById(card.comments, { ...commentSnap.data(), uid: commentId }) : card.comments.filter(comment => comment.uid !== commentId) } : card) }));
+              }, fail));
+            });
+          } else set(state => ({ evaluations: replaceById(state.evaluations, item) }));
+          updateLoading();
+        }, fail));
       });
-    } catch (error) {
-      console.error("Error adding/updating card:", error);
-    }
-  },
-
-  addEvaluation: async (username, selectedCardIds, report) => {
-    if (username === undefined || username === null) username = "Anonymous";
-    const { projectId } = useMyStore.getState();
-    if (projectId == null) {
-      throw new Error("null projectId");
-    }
-
-    const newEvaluation = {
-      ...report,
-      projectId: projectId,
-      cardIds: [...selectedCardIds],
-      by: username,
-      uid: "", // Temporarily empty, will be filled with doc I
-      lastUpdatedTime: "Now"
     };
-
-    try {
-      const evaluationDocRef = await addDoc(collection(db, "evaluations"), newEvaluation);
-
-      useMyStore.setState(produce((store) => {
-        const newEvaluations = store.evaluations;
-        newEvaluations.push({ ...newEvaluation, uid: evaluationDocRef.id });
-        store.evaluations = newEvaluations;
-      }));
-
-      await updateDoc(evaluationDocRef, { uid: evaluationDocRef.id, lastUpdatedTime: serverTimestamp() }); // Update the card with its UID
-
-      await updateDoc(doc(db, "projects", projectId), {
-        evaluations: arrayUnion(evaluationDocRef.id),
-      });
-    } catch (error) {
-      console.error("Error adding/updating card:", error);
-    }
+    projectUnsubscribe = onSnapshot(doc(db, "projects", projectId), snapshot => {
+      if (epoch !== generation) return;
+      if (!snapshot.exists()) { set({ loadingProject: false, loadError: "This project no longer exists. Return home or try the demo." }); return; }
+      const data = snapshot.data();
+      const savedPersonas = (data.personas || []).map((persona, index) => ({ ...persona, uid: persona.uid || `legacy-persona-${index}` }));
+      const personas = [...pendingPersonas.values()].reduce(replaceById, savedPersonas);
+      set({ projectName: data.name || "Untitled project", links: data.links || [], personas, canvasScale: data.canvasScale || emptyProject.canvasScale, loadingProject: false, loadError: "" });
+      if (!resumedPersonaSaves) {
+        resumedPersonaSaves = true;
+        recoveredPersonas.forEach(value => persist(`persona-${value.uid}`, () => savePersona(doc(db, "projects", projectId), projectId, value, epoch)));
+      }
+      expected = { cards: data.cards || [], evaluations: data.evaluations || [] };
+      watch("cards", expected.cards); watch("evaluations", expected.evaluations); updateLoading();
+    }, fail);
+    disposeProject = () => { projectUnsubscribe(); watchers.forEach(unsubscribe => unsubscribe()); watchers.clear(); };
+    return disposeProject;
   },
-
-  addCardData: async (stage) => {
-    const { projectId, cards } = useMyStore.getState();
-    if (projectId == null) {
-      throw new Error("null projectId");
-    }
-
-    const x = cards.reduce((max, card) => Math.max(card.position.x, max), 0) + 300;
-    const y = cards.length > 0 ? cards.at(-1).position.y: 50;
-    const newPosition = { x: x, y: y };
-
-
-
-    const newCard = {
-      projectId: projectId,
-      uid: "", // Temporarily empty, will be filled with doc ID
-      stage: stage,
-      prompt: prompts[stage] || "No prompt available",
-      description: "",
-      comments: [],
-      position: newPosition,
-    };
-
-    try {
-      const cardDocRef = await addDoc(collection(db, "cards"), newCard);
-
-      set(produce((store) => {
-        newCard.uid = cardDocRef.id;
-        store.cards.push(newCard);
-      }));
-
-      await updateDoc(cardDocRef, { uid: cardDocRef.id, createdAt: serverTimestamp() }); // Update the card with its UID
-
-      await updateDoc(doc(db, "projects", projectId), {
-        cards: arrayUnion(cardDocRef.id),
-        lastUpdatedTime: serverTimestamp(),
-      });
-    } catch (error) {
-      console.error("Error adding/updating card:", error);
-    }
+  resetDemo: async () => {
+    generation += 1; pendingWrites.clear(); failedWrites.clear(); draftDescriptions.clear(); writeVersions.clear(); writeQueues.clear();
+    set({ ...createDemoProject(), saveStatus: "saved", saveError: "" }); return persist("demo-reset", () => {});
   },
-
-  setCardDescription: async (id, newDescription) => {
-    set((state) => ({
-      ...state,
-      cards: state.cards.map((card) =>
-        card.uid === id ? { ...card, description: newDescription } : card
-      ),
-    }));
-    const cardDocRef = doc(db, "cards", id);
-    try {
-      await updateDoc(cardDocRef, { description: newDescription });
-    } catch (error) {
-      console.error("Error updating card description: ", error);
-    }
+  extendCanvasRight: () => set(state => ({ canvasScale: { ...state.canvasScale, x: Math.max(1.1, document.documentElement.scrollWidth / window.innerWidth) }, isRescaled: true })),
+  extendCanvasBottom: () => set(state => ({ canvasScale: { ...state.canvasScale, y: Math.max(1.1, document.documentElement.scrollHeight / window.innerHeight) }, isRescaled: true })),
+  addCardData: async stage => {
+    const { cards, projectId } = get();
+    const card = { uid: newId("cards"), projectId, stage, prompt: prompts[stage] || "Describe this stage.", description: "", comments: [], position: { x: cards.reduce((max, card) => Math.max(card.position.x, max), 0) + 300, y: cards.length ? cards.at(-1).position.y : 50 } };
+    set({ cards: [...cards, card] });
+    const ref = get().isDemo ? null : projectRef();
+    return persist(`card-add-${card.uid}`, async () => { const batch = writeBatch(db); batch.set(doc(db, "cards", card.uid), { ...card, createdAt: serverTimestamp() }); batch.update(ref, { cards: arrayUnion(card.uid), lastUpdatedTime: serverTimestamp() }); await batch.commit(); });
+  },
+  setCardDescription: async (id, description) => {
+    draftDescriptions.set(id, description);
+    set(state => ({ cards: state.cards.map(card => card.uid === id ? { ...card, description } : card) }));
+    const success = await persist(`description-${id}`, async () => {
+      await updateDoc(doc(db, "cards", id), { description });
+      if (draftDescriptions.get(id) === description) draftDescriptions.delete(id);
+    });
+    if (success && draftDescriptions.get(id) === description) draftDescriptions.delete(id);
+    return success;
   },
   setCardPosition: async (id, position) => {
-    const { isRescaled, canvasScale, projectId } = useMyStore.getState(); // Move this outside the async operation
-    
-    set((state) => ({
-      ...state,
-      cards: state.cards.map((card) =>
-        card.uid === id ? { ...card, position: position } : card
-      ),
+    set(state => ({ cards: state.cards.map(card => card.uid === id ? { ...card, position } : card) }));
+    const ref = get().isDemo ? null : projectRef(); const scale = get().canvasScale;
+    return persist(`position-${id}`, async () => { const batch = writeBatch(db); batch.update(doc(db, "cards", id), { position }); batch.update(ref, { canvasScale: scale, lastUpdatedTime: serverTimestamp() }); await batch.commit(); });
+  },
+  setProjectName: async projectName => { set({ projectName }); const ref = get().isDemo ? null : projectRef(); return persist("name", () => updateDoc(ref, { name: projectName, lastUpdatedTime: serverTimestamp() })); },
+  addPersona: async persona => {
+    const value = { ...persona, uid: persona.uid || newId("personas") }; set(state => ({ personas: replaceById(state.personas, value) }));
+    const ref = get().isDemo ? null : projectRef();
+    const projectId = get().projectId; const epoch = generation;
+    if (!get().isDemo) {
+      pendingPersonas.set(value.uid, value);
+      try { cachePersona(projectId, value); } catch { /* Cloud saving still works if browser storage is unavailable. */ }
+    }
+    return persist(`persona-${value.uid}`, () => savePersona(ref, projectId, value, epoch));
+  },
+  addComment: async (username, cardId, text) => {
+    const card = get().cards.find(item => item.uid === cardId);
+    if (!card || !text.trim()) return false;
+    const comment = { uid: newId("comments"), projectId: get().projectId, cardId, by: username || "Anonymous", text, lastUpdatedTime: now() };
+    set(state => ({ cards: state.cards.map(item => item.uid === cardId ? { ...item, comments: replaceById(item.comments, comment) } : item) }));
+    return persist(`comment-${comment.uid}`, async () => {
+      const batch = writeBatch(db);
+      batch.set(doc(db, "comments", comment.uid), comment);
+      batch.update(doc(db, "cards", cardId), { comments: arrayUnion(comment.uid) });
+      await batch.commit();
+    });
+  },
+  addEvaluation: async (username, cardIds, report) => {
+    if (!report.problem?.trim()) return false;
+    const evaluation = { ...report, uid: report.uid || newId("evaluations"), projectId: get().projectId, cardIds: [...cardIds], by: username || "Anonymous", lastUpdatedTime: now() };
+    const ref = get().isDemo ? null : projectRef();
+    set(state => ({ evaluations: replaceById(state.evaluations, evaluation) }));
+    return persist(`evaluation-${evaluation.uid}`, async () => { const batch = writeBatch(db); batch.set(doc(db, "evaluations", evaluation.uid), evaluation); batch.update(ref, { evaluations: arrayUnion(evaluation.uid), lastUpdatedTime: serverTimestamp() }); await batch.commit(); });
+  },
+  addLink: async link => {
+    if (!link.start || link.start === link.end || !get().cards.some(card => card.uid === link.start) || !get().cards.some(card => card.uid === link.end) || get().links.some(old => old.start === link.start && old.end === link.end)) return;
+    set(state => ({ links: [...state.links, link] })); const ref = get().isDemo ? null : projectRef();
+    return persist(`connection-${link.start}-${link.end}`, () => runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(ref);
+      const cardIds = snapshot.data()?.cards || [];
+      if (!cardIds.includes(link.start) || !cardIds.includes(link.end)) throw new Error("A connected stage was deleted.");
+      transaction.update(ref, { links: arrayUnion(link), lastUpdatedTime: serverTimestamp() });
     }));
-    
-    const cardDocRef = doc(db, "cards", id);
-    try {
-      await updateDoc(cardDocRef, { position: position });
-      
-      if (isRescaled) {
-        const projectDocRef = doc(db, "projects", projectId);
-        await updateDoc(projectDocRef, { canvasScale: canvasScale });
-        
-        set(({isRescaled: false}));
-      }
-    } catch (error) {
-      console.error("Error updating card position: ", error);
-    }
   },
-
-  setProjectName: async (projectName) => {
-    const { projectId } = useMyStore.getState();
-
-    if (projectId) {
-      try {
-        set((state) => ({
-          ...state,
-          projectName: projectName
-        }));
-        const projectDocRef = doc(db, "projects", projectId);
-        await updateDoc(projectDocRef, { name: projectName });
-      } catch (error) {
-        console.error("Error updating name in Firestore:", error);
-      }
-    } else {
-      console.error("projectId is not set");
+  removeLink: async link => { set(state => ({ links: state.links.filter(old => old.start !== link.start || old.end !== link.end) })); const ref = get().isDemo ? null : projectRef(); return persist(`connection-${link.start}-${link.end}`, () => updateDoc(ref, { links: arrayRemove(link), lastUpdatedTime: serverTimestamp() })); },
+  refreshLinks: () => set(state => ({ links: [...state.links] })),
+  deleteCardAndLinks: async id => {
+    const card = get().cards.find(item => item.uid === id); if (!card) return;
+    if (get().isDemo) {
+      set(state => ({ cards: state.cards.filter(card => card.uid !== id), links: state.links.filter(link => link.start !== id && link.end !== id) }));
+      return persist(`delete-${id}`, () => {});
     }
+    const ref = projectRef();
+    const success = await persist(`delete-${id}`, async () => {
+      await runTransaction(db, async transaction => {
+        const snapshot = await transaction.get(ref); const data = snapshot.data();
+        transaction.update(ref, { cards: arrayRemove(id), links: (data.links || []).filter(link => link.start !== id && link.end !== id), lastUpdatedTime: serverTimestamp() });
+        transaction.delete(doc(db, "cards", id));
+        card.comments.forEach(comment => transaction.delete(doc(db, "comments", comment.uid)));
+      });
+    });
+    if (success) { set(state => ({ cards: state.cards.filter(card => card.uid !== id), links: state.links.filter(link => link.start !== id && link.end !== id) })); if (get().isDemo) await persist(`delete-${id}`, () => {}); }
   },
-
-  // Refs is {start: cardId, end: cardId} (must be dict)
-  addLink: async (refs) => {
-    if (refs.start === refs.end)
-      return;
-
-    let exist = true;
-    set(
-      produce((store) => {
-        if (!store.links.some(link => (link.start === refs.start && link.end === refs.end))) {
-          store.links.push(refs);
-          exist = false;
-      }
-      })
-    );
-    
-    if (exist) return; // Prevent duplicates
-
-    const { projectId, links } = useMyStore.getState();
-    if (projectId) {
-      try {
-        const projectDocRef = doc(db, "projects", projectId);
-        await updateDoc(projectDocRef, { links: links });
-      } catch (error) {
-        console.error("Error updating arrows in Firestore:", error);
-      }
-    } else {
-      console.error("projectId is not set, unable to update arrows in Firestore");
+  deleteComment: async id => {
+    const card = get().cards.find(item => item.comments.some(comment => comment.uid === id)); if (!card) return;
+    if (get().isDemo) {
+      set(state => ({ cards: state.cards.map(item => item.uid === card.uid ? { ...item, comments: item.comments.filter(comment => comment.uid !== id) } : item) }));
+      return persist(`comment-delete-${id}`, () => {});
     }
+    const success = await persist(`comment-delete-${id}`, async () => { const batch = writeBatch(db); batch.update(doc(db, "cards", card.uid), { comments: arrayRemove(id) }); batch.delete(doc(db, "comments", id)); await batch.commit(); });
+    if (success) { set(state => ({ cards: state.cards.map(item => item.uid === card.uid ? { ...item, comments: item.comments.filter(comment => comment.uid !== id) } : item) })); if (get().isDemo) await persist(`comment-delete-${id}`, () => {}); }
   },
-
-
-  refreshLinks: () =>
-    set(
-      produce((store) => {
-        store.links = [...store.links];
-      })
-    ),
-
   resetStore: async () => {
-    // Delete corresponding firestore data
-    const { projectId, cards } = useMyStore.getState();
-    if (projectId) {
-      try {
-        const projectDocRef = await getDoc(doc(db, "projects", projectId));
-        await updateDoc(projectDocRef, { links: [], cards: [] });
-      } catch (error) {
-        console.error("Error updating arrows in Firestore:", error);
-      }
-
-      const cardFetchPromises = cards.forEach(cardId => {
-        deleteDoc(doc(db, "cards", cardId));
+    if (get().isDemo) return get().resetDemo();
+    // Reset only documents referenced by this project, atomically and without deleting its identity.
+    const ref = projectRef();
+    return persist("reset", async () => {
+      await runTransaction(db, async transaction => {
+        const snapshot = await transaction.get(ref); const data = snapshot.data();
+        (data.cards || []).forEach(id => transaction.delete(doc(db, "cards", id)));
+        (data.evaluations || []).forEach(id => transaction.delete(doc(db, "evaluations", id)));
+        get().cards.forEach(card => card.comments.forEach(comment => transaction.delete(doc(db, "comments", comment.uid))));
+        transaction.update(ref, { cards: [], links: [], evaluations: [], personas: [], lastUpdatedTime: serverTimestamp() });
       });
-      await Promise.all(cardFetchPromises);
-
-      set({
-        cards: [],
-        links: [],
-        evaluations: [],
-        projectName: "",
-        projectId: "",
-        canvasScale: { x: 1.1, y: 1.1 },
-        isRescaled: false,
-      });
-    }
-  },
-
-  cleanStore: async (newProjectId) => {
-    // Delete corresponding firestore data
-    const { projectId } = useMyStore.getState();
-    if (!projectId || projectId === newProjectId)
-      return;
-    set({
-      cards: [],
-      links: [],
-      evaluations: [],
-      projectName: "",
-      projectId: "",
-      canvasScale: { x: 1.1, y: 1.1 },
-      isRescaled: false,
     });
   },
-
-  deleteCardAndLinks: async (cardId) => {
-    const { projectId, cards, links } = useMyStore.getState();
-    const cardToDelete = cards.find((card) => card.uid === cardId);
-    if (cardToDelete && cardToDelete.uid) {
-      const cardToDeleteId = cardToDelete.uid;
-      const newCardsData = cards.filter((card) => card.uid !== cardId);
-      const newLinks = links.filter((link) => link.start !== cardId && link.end !== cardId);
-      try {
-        useMyStore.setState({ projectId: projectId, cards: newCardsData, links: newLinks });
-        await deleteDoc(doc(db, "cards", cardToDeleteId));
-        await updateDoc(doc(db, "projects", projectId), {
-          cards: newCardsData.map((card) => card.uid),
-          links: newLinks
-        });
-      } catch (error) {
-        console.error("Error deleting card and links: ", error);
-      }
-    }
-  },
-  deleteComment: async (commentId) => {
-    const { cards } = useMyStore.getState();
-
-    useMyStore.setState((state) => {
-      const newCards = state.cards.map((card) => {
-        if (card.comments.some((comment) => comment.uid === commentId)) {
-          const updatedComments = card.comments.filter((comment) => comment.uid !== commentId);
-          return { ...card, comments: updatedComments };
-        }
-        return card;
-      });
-
-      return { ...state, cards: newCards };
-    });
-
-    try {
-      const cardToUpdate = cards.find((card) => card.comments.some((comment) => comment.uid === commentId));
-      if (cardToUpdate) {
-        await updateDoc(doc(db, "cards", cardToUpdate.uid), {
-          comments: cardToUpdate.comments.map((comment) => (comment.uid)).filter((uid) => uid !== commentId)
-        });
-        await deleteDoc(doc(db, "comments", commentId));
-      }
-    } catch (error) {
-      console.error("Error deleting comment:", error);
-    }
-  }
-});
-
-const useMyStore = createWithEqualityFn(devtools(myStore));
-
+}));
 export default useMyStore;

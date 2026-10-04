@@ -1,60 +1,46 @@
 import React, { useState } from 'react';
 import useMyStore from "../../../contexts/projectContext";
 import { db } from "../../../firebase";
-import { doc, updateDoc, collection, arrayUnion, query, where, getDocs } from "firebase/firestore"; // Import Firestore document update functions
+import { doc, collection, arrayUnion, query, where, getDocs, writeBatch } from "firebase/firestore"; // Import Firestore document update functions
+
+export function makeShareUrl(href, projectId) {
+    const url = new URL(href);
+    url.pathname = `/project/${encodeURIComponent(projectId)}`;
+    url.searchParams.delete("usp"); url.hash = "";
+    return url.toString();
+}
 
 function CollaboratorModal({ isOpen, onClose }) {
     const projectId = useMyStore((store) => store.projectId);
     const [email, setEmail] = useState('');
     const [userNotFound, setUserNotFound] = useState(false);
-    const handleSubmit = (e) => {
-        e.preventDefault();
-    };
+    const [status, setStatus] = useState("");
+    const [pending, setPending] = useState(false);
+    const handleSubmit = (e) => { e.preventDefault(); addCollaborator(email); };
 
-    const url = `${window.location.href}?usp=sharing`;
+    const url = makeShareUrl(window.location.href, projectId);
 
     const handleCopyClick = async () => {
         try {
-            await navigator.clipboard.writeText(url);
+            await navigator.clipboard.writeText(url); setStatus("Link copied.");
         } catch (err) {
-            console.error('Failed to copy: ', err);
+            setStatus("Clipboard unavailable. Select and copy the link instead.");
         }
     };
 
     const addCollaborator = async (email) => {
-        if (projectId) {
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("email", "==", email));
-
-            try {
-                const querySnapshot = await getDocs(q);
-                if (querySnapshot.empty) {
-                    setUserNotFound(true);
-                    return;
-                }
-                let userId = null;
-                querySnapshot.forEach((doc) => {
-                    userId = doc.id;
-                });
-
-                const projectRef = doc(db, "projects", projectId);
-                try {
-                    await updateDoc(projectRef, {
-                        userIds: arrayUnion(userId)
-                    });
-                    const userDocRef = doc(db, "users", userId);
-                    await updateDoc(userDocRef, {
-                        projectIds: arrayUnion(projectId)
-                    });
-                } catch (error) {
-                    console.error("Error adding user ID to project: ", error);
-                }
-
-            } catch (error) {
-                console.error("Error getting documents: ", error);
-                setUserNotFound(true);
-            }
-        }
+        if (!projectId || pending) return;
+        setPending(true); setStatus(""); setUserNotFound(false);
+        try {
+            const snapshot = await getDocs(query(collection(db, "users"), where("email", "==", email.trim())));
+            if (snapshot.empty) { setUserNotFound(true); return; }
+            const userId = snapshot.docs[0].id;
+            const batch = writeBatch(db);
+            batch.update(doc(db, "projects", projectId), { userIds: arrayUnion(userId) });
+            batch.update(doc(db, "users", userId), { projectIds: arrayUnion(projectId) });
+            await batch.commit(); setStatus("Collaborator added.");
+        } catch { setStatus("Could not add collaborator. Check your connection and project permissions, then retry."); }
+        finally { setPending(false); }
     };
 
     if (!isOpen) return null;
@@ -91,7 +77,7 @@ function CollaboratorModal({ isOpen, onClose }) {
                         <div className="ml-auto">
                             <button
                                 type="submit"
-                                onClick={() => { addCollaborator(email) }}
+                                disabled={pending}
                                 className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                             >
                                 Invite
@@ -104,8 +90,9 @@ function CollaboratorModal({ isOpen, onClose }) {
                         )
                     }
                 </form>
+                {status && <p role="status" className="text-sm mt-2">{status}</p>}
                 <div className='mt-4 flex flex-row'>
-                    <input type="text w-[90%] p-2 border" value={url} readOnly />
+                    <input type="text" className="w-[90%] p-2 border" value={url} readOnly />
                     <button onClick={handleCopyClick} className='ml-2 bg-blue-500 p-1 rounded text-white text-sm'>Copy</button>
                 </div>
             </div>

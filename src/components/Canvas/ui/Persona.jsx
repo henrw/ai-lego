@@ -3,12 +3,12 @@ import useMyStore from "../../../contexts/projectContext";
 import EvaluationBox from "../Block/Evaluation";
 import { shallow } from "zustand/shallow";
 
-function PersonaIcon({ imgUrl, description, isSelected, toggleFunction, idx }) {
+function PersonaIcon({ personaId, imgUrl, description, isSelected, toggleFunction, idx }) {
     const [isHover, setIsHover] = useState(false);
     const [showEvaluation, setShowEvaluation] = useState(false);
     const [currentEvalIndex, setCurrentEvalIndex] = useState(0);
     const evaluationData = useMyStore(
-        (store) => store.evaluations.filter((evaluation) => evaluation.personaDescription === description),
+        (store) => store.evaluations.filter((evaluation) => (evaluation.personaId ? evaluation.personaId === personaId : evaluation.personaDescription === description)),
         shallow
     );
     return (
@@ -54,7 +54,7 @@ function PersonaIcon({ imgUrl, description, isSelected, toggleFunction, idx }) {
                                     </button>
                                 </div>
                             )}
-                            <EvaluationBox evaluationData={evaluationData[currentEvalIndex]} />
+                            <EvaluationBox evaluationData={evaluationData[Math.min(currentEvalIndex, evaluationData.length - 1)]} />
                         </>
                     )}
                 </div>
