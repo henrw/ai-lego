@@ -92,7 +92,7 @@ export default function CanvasTrace({ cards, zoom = 1 }) {
       <button onClick={playback.onClear}>Return to results</button>
       </div>
     </div>
-    {card && <div className="trace-active-outline" aria-hidden="true" style={{ left: card.position.x - 4, top: card.position.y + BOARD_TOP - 4, width: (card.width || BRICK_WIDTH) + 8, height: (card.height || 110) + 8 }}/>} 
+    {card && <div className="trace-active-outline" aria-hidden="true" style={{ left: card.position.x - 4, top: card.position.y + BOARD_TOP - 4, width: (card.width || BRICK_WIDTH) + 8, height: (card.height || 110) + 8 }}/>}
     {card && <div ref={travelerRef} className={`trace-traveler ${playback.reducedMotion ? 'trace-no-motion' : ''} ${placement?.dock ? 'trace-avatar-only' : ''}`} style={{ left: placement?.x ?? card.position.x, top: placement?.y ?? card.position.y + BOARD_TOP, width: placement?.width || Math.min(290, (window.innerWidth - 32) / zoom), visibility: placement ? 'visible' : 'hidden' }}>
       <img src={playback.persona.imgUrl || 'https://firebasestorage.googleapis.com/v0/b/ai-lego.appspot.com/o/persona_pictures%2FSubject%205.png?alt=media'} alt={playback.persona.description}/>
       <div className="trace-speech"><strong>{card.stage} · {playback.index + 1}/{playback.entries.length}</strong><p aria-live="polite">{traceExperience(active) || 'Examining this stage…'}{playback.generating && <span className="trace-stream-cursor" aria-hidden="true">▍</span>}</p><small>{playback.generating ? 'Draft · streaming · not yet verified' : 'Draft · playback'}</small></div>
