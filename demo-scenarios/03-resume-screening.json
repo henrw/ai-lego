@@ -1,0 +1,228 @@
+{
+  "schema_version": "1.0",
+  "id": "03-resume-screening",
+  "title": "Resume screening and recruiter shortlists",
+  "provenance": {
+    "scenario_origin": "adapted_from_paper",
+    "paper_section": "E.3",
+    "paper_doi": "10.1145/3816897",
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Large organizations spend substantial time manually processing job applications.",
+    "project_goal": "Extract resume information and rank candidates for recruiter review.",
+    "evaluation_metrics": [
+      "Information extraction accuracy",
+      "Candidate ranking accuracy"
+    ],
+    "key_features": [
+      "Resume parsing",
+      "Multi-criteria ranking"
+    ],
+    "requirements": [
+      "NLP models",
+      "Internal company resume and hiring datasets"
+    ],
+    "deployment": "Cloud service integrated with an ATS or HR platform.",
+    "target_users": [
+      "HR departments",
+      "Recruitment agencies"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "A qualified applicant returns after a caregiving break. Historical hiring labels and continuous-employment features push their resume below the first page. A recruiter has time to review only the first twenty entries. This extends the existing resume demo.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Not hired does not mean unqualified; the model can learn prior screening decisions and reinforce them.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the train block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "train",
+      "before": "Train the ranker with hired applicants as positives and non-hired applicants as negatives. Split data by hiring period and role; tune ranking loss on the most recent validation period.",
+      "proposed_change": "Introduce independent qualification review for sampled applications, separate unknown labels, and compare against a criteria-based baseline.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Reduce recruiter screening time while helping qualified applicants receive consideration. The initial plan treats resemblance to previously hired candidates as evidence of fit."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Extract skills, experience, education, and employment dates; score matches to job requirements and rank applicants. Recruiters review the first twenty results before deciding who receives an interview."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Use internal resumes, job descriptions, and hiring outcomes. Normalize titles and dates, redact contact details, and derive skills, tenure, and employment-gap features. Historical rejected applicants have no job-performance labels."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Use a pretrained language encoder for skill extraction and a learning-to-rank model combining skill matches, education, and employment continuity. Past hiring decisions serve as the relevance proxy."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Train the ranker with hired applicants as positives and non-hired applicants as negatives. Split data by hiring period and role; tune ranking loss on the most recent validation period."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Measure field-extraction F1 and precision at twenty against past recruiter selections. Test chronological holdouts and a sample of different resume formats."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Show a cloud-generated ranked shortlist and extracted evidence inside the ATS. Recruiters retain formal authority and can open lower-ranked resumes; the default screen shows twenty entries."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect recruiter overrides and hiring outcomes monthly, then retrain quarterly. Applicant complaints are currently handled outside the model team."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "03-resume-screening-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "Historical success is an imperfect definition of qualification and may exclude nontraditional career paths.",
+      "proposed_revision": "Define job-relevant criteria with hiring managers and applicant advocates; separate qualification from historical resemblance.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "03-resume-screening-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "A nominally advisory ranking becomes an exclusion decision when lower-ranked applicants are never reviewed.",
+      "proposed_revision": "Keep all applications accessible, sample below-cutoff candidates, and provide a review route for parsing or ranking errors.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "03-resume-screening-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Selection-biased labels and gap features can disadvantage applicants whose experience is not reflected in past hires.",
+      "proposed_revision": "Document missing outcomes, minimize proxy features, and obtain job-relevance review before retaining gap or tenure variables.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "03-resume-screening-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "Employment continuity and past hiring may measure conformity rather than job capability.",
+      "proposed_revision": "Use validated job criteria, inspect each proxy, and present source-linked evidence instead of an unexplained single score.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "03-resume-screening-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Not hired does not mean unqualified; the model can learn prior screening decisions and reinforce them.",
+      "proposed_revision": "Introduce independent qualification review for sampled applications, separate unknown labels, and compare against a criteria-based baseline.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "03-resume-screening-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Agreement with recruiters cannot establish fair access; a first-page metric ignores qualified people ranked below it.",
+      "proposed_revision": "Measure qualified-candidate recall, ranking disparities where appropriately assessed, parser errors, and below-cutoff review outcomes.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "03-resume-screening-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "Default ordering and workload can overpower formal human authority; applicants cannot see an extraction error.",
+      "proposed_revision": "Provide correction and reconsideration paths, log overrides, and change defaults to encourage review beyond the first page.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "03-resume-screening-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Only recruiter feedback sustains the existing decision pattern and hides harms reported by applicants.",
+      "proposed_revision": "Connect applicant corrections to quality review; review errors promptly and audit outcomes before each retraining cycle.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "03-resume-screening-persona-1",
+        "name": "Morgan",
+        "stakeholder_role": "Applicant returning after caregiving",
+        "description": "Morgan has relevant project experience and a two-year caregiving break. They submit a skills-based resume and cannot see where the system ranked it. They need an opportunity to correct extraction errors and demonstrate current skills.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The gap causes the low rank; inspect the model and compare controlled resume variants."
+        ],
+        "proposed_evaluation_question": "Did the system treat my career break as a lack of ability?",
+        "relevant_stages": [
+          "data",
+          "model",
+          "train"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "03-resume-screening-persona-2",
+        "name": "Casey",
+        "stakeholder_role": "Recruiter under volume pressure",
+        "description": "Casey handles hundreds of applications and usually opens only the first page of results. They value speed but remain responsible for interview decisions and need evidence that can be checked quickly.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The recruiter can allocate time to random lower-rank review; staffing must be confirmed."
+        ],
+        "proposed_evaluation_question": "How do I know which qualified candidates never reached my screen?",
+        "relevant_stages": [
+          "task",
+          "test",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "03-resume-screening-persona-3",
+        "name": "Drew",
+        "stakeholder_role": "Hiring manager seeking transferable skills",
+        "description": "Drew leads a team with changing skill needs. They can revise job criteria but are not trained to diagnose ranking models. They worry that past-hire similarity misses strong applicants from different industries.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Transferable skills can be assessed consistently; a rubric needs piloting."
+        ],
+        "proposed_evaluation_question": "Can the shortlist reflect this role rather than our previous hires?",
+        "relevant_stages": [
+          "problem",
+          "model",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

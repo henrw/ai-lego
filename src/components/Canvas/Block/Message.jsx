@@ -1,20 +1,25 @@
 import React, { useState } from "react";
 import useMyStore from "../../../contexts/projectContext";
 
-export default function MessageBox({ commentId, time, message }) {
+import IssueResolution from "./IssueResolution";
+import AccountIdentity from "../../AccountIdentity";
+
+export default function MessageBox({ commentId, time, message, author, by, issue, role, showHistory = true }) {
 
     const deleteComment = useMyStore((store) => store.deleteComment);
     const [dropdownState, setDropdownState] = useState(false);
+    if (issue?.resolutionStatus === "resolved") return <IssueResolution showHistory={showHistory} issue={issue} kind="comments" role={role}/>;
     return (
         <div className="flex items-start mb-1 no-drag">
-            <img className="w-8 h-8 rounded-full no-drag" src="/profile-pic.png" alt="Jese" onDrag={(e)=>{e.stopPropagation()}} onDragStart={(e)=>{e.stopPropagation()}} onDragStop={(e)=>{e.stopPropagation()}} />
+
             <div className="flex flex-col w-full leading-1.5 ml-1">
                 <div className="flex items-left space-x-2 text-xs">
-                    {/* <span className="font-semibold">{name}</span> */}
+                    <AccountIdentity author={author} fallbackName={by} />
                     <span className="font-normal text-gray-500">{time}</span>
                 </div>
                 <div className="relative text-sm font-normal bg-white rounded p-2">
                     <div>{message}</div>
+                    {issue && <IssueResolution showHistory={showHistory} issue={issue} kind="comments" role={role}/>}
                     <div className="absolute top-0 right-0">
                         <button
                             onClick={() => { setDropdownState(!dropdownState) }}

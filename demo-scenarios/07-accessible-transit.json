@@ -1,0 +1,229 @@
+{
+  "schema_version": "1.0",
+  "id": "07-accessible-transit",
+  "title": "Accessible transit route assistant",
+  "provenance": {
+    "scenario_origin": "new_demo_scenario",
+    "paper_section": null,
+    "paper_doi": null,
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Travelers need routes that account for physical access and temporary disruptions.",
+    "project_goal": "Recommend transit journeys using rider-selected access constraints and live service information.",
+    "evaluation_metrics": [
+      "Feasible journey rate",
+      "Disruption freshness",
+      "Travel-time error"
+    ],
+    "key_features": [
+      "Accessible route filtering",
+      "Disruption alerts",
+      "Route alternatives"
+    ],
+    "requirements": [
+      "Transit feeds",
+      "Verified access metadata",
+      "Uncertainty-aware routing"
+    ],
+    "deployment": "Mobile app and staffed help-desk view.",
+    "target_users": [
+      "Transit riders",
+      "Travel support staff"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "A wheelchair user receives a route through a station whose elevator feed is stale. The app calls the route accessible and offers no indication that the status has not been checked recently.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Offline or stale advice may be mistaken for verified current access.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the deploy block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "deploy",
+      "before": "Show the best route with an accessible badge and push disruption notifications. Cache routes for offline use without a visible freshness timestamp.",
+      "proposed_change": "Display last-verified time, avoid definitive badges for unknown status, and provide offline help and alternatives.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Reduce the effort of planning feasible transit journeys for riders with varied access needs. Define a route as feasible if required facilities are available."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Filter candidate routes by step-free access, walking limits, and transfer needs; rank the remaining routes by estimated arrival time."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Join schedules, live disruptions, station inventories, and rider reports. Normalize station identifiers and timestamp updates; carry forward the last known elevator state when no update arrives."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Use a travel-time predictor plus a constrained graph-routing algorithm. Facility availability is treated as a hard input rather than a probability."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Train the travel-time model on completed journeys split by route and date. Optimize absolute arrival-time error."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Test arrival error, route constraint satisfaction, and disruption update delay using replayed service events."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Show the best route with an accessible badge and push disruption notifications. Cache routes for offline use without a visible freshness timestamp."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect completed-trip ratings and facility reports; operations staff review reports each morning."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "07-accessible-transit-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "A binary access label ignores rider-specific constraints and the cost of being stranded.",
+      "proposed_revision": "Co-define feasibility with riders and include uncertainty, fallback options, and individual constraints.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "07-accessible-transit-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "Fastest arrival can still involve exhausting transfers or an unacceptable failure risk.",
+      "proposed_revision": "Let riders choose transfer and reliability preferences instead of using speed alone.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "07-accessible-transit-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Missing updates are converted into apparent availability, and poorly reported stations may look reliable.",
+      "proposed_revision": "Represent unknown and stale states explicitly; audit reporting coverage across stations.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "07-accessible-transit-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "Deterministic availability masks uncertain facilities and can make a fragile route look safe.",
+      "proposed_revision": "Expose data freshness and uncertainty; offer routes with verified facilities and clear fallback choices.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "07-accessible-transit-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Completed journeys omit abandoned trips and may bias predictions toward riders without access barriers.",
+      "proposed_revision": "Include failed and abandoned journey reports with consent and evaluate coverage limits.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "07-accessible-transit-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Feed-based tests can pass even when a facility is physically unavailable.",
+      "proposed_revision": "Run compensated rider-led journey checks and measure stranded trips, recovery time, and uncertainty comprehension.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "07-accessible-transit-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "Offline or stale advice may be mistaken for verified current access.",
+      "proposed_revision": "Display last-verified time, avoid definitive badges for unknown status, and provide offline help and alternatives.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "07-accessible-transit-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Stranded riders may not complete a trip or submit a rating, and a morning review may be too slow.",
+      "proposed_revision": "Offer an immediate disruption-report path and accessible support; track reports from incomplete journeys.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "07-accessible-transit-persona-1",
+        "name": "Quinn",
+        "stakeholder_role": "Wheelchair user commuting",
+        "description": "Quinn relies on elevators and needs to arrive for a scheduled shift. A failed transfer can add substantial travel and cannot always be solved by taking stairs. They want route uncertainty before leaving home.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "All step-free routes meet Quinn’s needs; confirm dimensions and preferences."
+        ],
+        "proposed_evaluation_question": "When was this elevator last confirmed working?",
+        "relevant_stages": [
+          "data",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "07-accessible-transit-persona-2",
+        "name": "Em",
+        "stakeholder_role": "Rider with limited stamina",
+        "description": "Em can walk short distances but needs predictable transfers and places to rest. A technically step-free route with several transfers may be impractical.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The rider’s acceptable walking distance is fixed; allow changes."
+        ],
+        "proposed_evaluation_question": "Can I trade a later arrival for fewer transfers?",
+        "relevant_stages": [
+          "task",
+          "model"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "07-accessible-transit-persona-3",
+        "name": "Pat",
+        "stakeholder_role": "Transit support agent",
+        "description": "Pat helps riders reroute during disruptions and needs the same data freshness indicators riders see. They can contact station staff but cannot repair a failed facility.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Station verification is always available; staffing varies."
+        ],
+        "proposed_evaluation_question": "Which part of this route is verified, and what is the fallback?",
+        "relevant_stages": [
+          "test",
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

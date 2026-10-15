@@ -1,3 +1,4 @@
+import { saveOpenAIKey } from '../utils/openAIKey';
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   createUserWithEmailAndPassword,
@@ -22,6 +23,7 @@ export function UserAuthContextProvider({ children }) {
     return createUserWithEmailAndPassword(auth, email, password);
   }
   function logOut() {
+    try { if (auth.currentUser?.uid) saveOpenAIKey(auth.currentUser.uid, ""); } catch {}
     return signOut(auth);
   }
   function googleSignIn() {

@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import { db, storage } from "../firebase";
 import { doc, getDoc, updateDoc, collection, arrayUnion, arrayRemove, query, where, getDocs, serverTimestamp, writeBatch } from "firebase/firestore";
 import { ref, uploadBytes, deleteObject, getDownloadURL } from "firebase/storage";
+import { profileAvatar, randomAvatarSeed } from "../utils/avatar";
 import ProfileModal from "./ProfileModal";
 import Footer from "./Footer";
 import ThreeDotMenu from "./Canvas/ui/ThreeDotMenu";
@@ -23,15 +24,11 @@ const Home = () => {
   const [fields, setFields] = useState({
     occupation: "",
     experienceLevel: "",
-    employer: "",
-    department: "",
   });
   // New state to track custom input values
   const [customInputs, setCustomInputs] = useState({
     customOccupation: "",
     customExperienceLevel: "",
-    customEmployer: "",
-    customDepartment: "",
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -51,7 +48,10 @@ const Home = () => {
         try {
           const docSnap = await getDoc(userDocRef);
           if (docSnap.exists()) {
-            setUserProfile(docSnap.data());
+            const profile = docSnap.data();
+            setUserProfile(profile);
+            setProfileImageUrl(profileAvatar(profile, user.uid));
+            setFields(previous => Object.fromEntries(Object.keys(previous).map(key => [key, profile[key] || ""])));
           }
         } catch (error) {
           console.error("Error fetching user profile: ", error);
@@ -95,8 +95,9 @@ const Home = () => {
     // Check if coming from signup with a new user
     if (location.state?.newUser) {
       setShowModal(true);
+      navigate(location.pathname, { replace: true, state: { ...location.state, newUser: false } });
     }
-  }, [location]);
+  }, [location, navigate]);
 
   const handleFieldChange = (fieldName) => (e) => {
     setFields((prevFields) => ({ ...prevFields, [fieldName]: e.target.value }));
@@ -115,22 +116,29 @@ const Home = () => {
       await uploadBytes(storageRef, selectedFile);
       const imageUrl = await getDownloadURL(storageRef);
       setProfileImageUrl(imageUrl);
+      setUserProfile(previous => ({ ...previous, profile_picture: imageUrl }));
       await updateDoc(doc(db, "users", user?.uid), { profile_picture: imageUrl });
     } catch (error) {
       console.error("Error during image upload:", error);
     }
   };
 
-  const deleteProfileImage = async () => {
-    if (!selectedFile) return;
+  const randomizeProfileImage = async () => {
+    if (!user?.uid) return;
+    const avatarSeed = randomAvatarSeed();
     try {
-      const storageRef = ref(storage, `profile_pictures/${user?.uid}/${selectedFile.name}`);
-      await deleteObject(storageRef);
-      setProfileImageUrl("");
-      await updateDoc(doc(db, "users", user?.uid), { profile_picture: null });
-    } catch (error) {
-      console.error("Error during image deletion:", error);
-    }
+      await updateDoc(doc(db, "users", user.uid), { avatarSeed, profile_picture: "" });
+      setProfileImageUrl(profileAvatar({ avatarSeed }, user.uid));
+      setUserProfile(previous => ({ ...previous, avatarSeed, profile_picture: "" }));
+    } catch { setProjectError("Could not save your avatar. Please retry."); }
+  };
+  const deleteProfileImage = async () => {
+    if (!user?.uid) return;
+    try {
+      await updateDoc(doc(db, "users", user.uid), { profile_picture: "" });
+      setProfileImageUrl(profileAvatar({ ...userProfile, profile_picture: "" }, user.uid));
+      setUserProfile(previous => ({ ...previous, profile_picture: "" }));
+    } catch { setProjectError("Could not remove your profile image. Please retry."); }
   };
 
   const handleSubmit = async (event) => {
@@ -141,7 +149,7 @@ const Home = () => {
       return;
     }
 
-    let finalData = { ...fields, profile_picture: profileImageUrl };
+    let finalData = { ...fields };
 
     // Replace "Other" fields with custom input values
     Object.keys(fields).forEach((field) => {
@@ -167,7 +175,7 @@ const Home = () => {
     try {
       const ref = doc(collection(db, "projects"));
       const batch = writeBatch(db);
-      batch.set(ref, { uid: ref.id, name: "untitled", cards: [], links: [], evaluations: [], personas: [], userIds: [user.uid], lastUpdatedTime: serverTimestamp(), lastUpdatedBy: user.uid, canvasScale: { x: 1.1, y: 1.1 } });
+      batch.set(ref, { uid: ref.id, name: "Untitled project", cards: [], links: [], evaluations: [], personas: [], userIds: [user.uid], lastUpdatedTime: serverTimestamp(), lastUpdatedBy: user.uid, canvasScale: { x: 1.1, y: 1.1 } });
       batch.update(doc(db, "users", user.uid), { projectIds: arrayUnion(ref.id) });
       await batch.commit(); navigate(`/project/${ref.id}`);
     } catch { setProjectError("Could not create a project. Check your connection and retry."); }
@@ -265,6 +273,7 @@ const Home = () => {
         customInputs={customInputs}
         uploadProfileImage={uploadProfileImage}
         deleteProfileImage={deleteProfileImage}
+        randomizeProfileImage={randomizeProfileImage}
         profileImageUrl={profileImageUrl}
         handleSubmit={handleSubmit}
       />

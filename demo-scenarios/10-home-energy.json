@@ -1,0 +1,229 @@
+{
+  "schema_version": "1.0",
+  "id": "10-home-energy",
+  "title": "Household energy scheduling assistant",
+  "provenance": {
+    "scenario_origin": "new_demo_scenario",
+    "paper_section": null,
+    "paper_doi": null,
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Households want lower energy bills while maintaining comfort and control over connected devices.",
+    "project_goal": "Forecast energy use and suggest or schedule flexible appliance operation.",
+    "evaluation_metrics": [
+      "Estimated bill savings",
+      "Peak-demand reduction",
+      "Comfort satisfaction"
+    ],
+    "key_features": [
+      "Usage forecast",
+      "Appliance scheduling",
+      "Override controls"
+    ],
+    "requirements": [
+      "Permissioned smart-meter data",
+      "Device constraints",
+      "Resident preferences"
+    ],
+    "deployment": "Home app connected to compatible thermostats and appliances.",
+    "target_users": [
+      "Residents",
+      "Household account holders"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "An account holder enables automatic thermostat optimization. Another resident works from home and repeatedly overrides the schedule, but the system treats those overrides as noise and restores the cheaper setting.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Overrides may be the clearest signal of unmet needs; filtering them reinforces the unwanted behavior.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the feedback block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "feedback",
+      "before": "Collect account-holder ratings monthly and use device logs continuously. Treat repeated manual overrides as anomalous input when updating schedules.",
+      "proposed_change": "Ask why overrides occur, preserve them as preference evidence, and review conflicts with every affected resident.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Help households reduce energy costs without sacrificing essential comfort or resident control. The initial plan uses account-holder savings as the main outcome."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Forecast hourly demand and recommend appliance start times. With account-holder permission, automatically adjust selected devices within configured limits."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Collect permissioned meter readings, device events, tariffs, and weather. Aggregate readings hourly, handle gaps, and infer occupancy from usage patterns."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Use a time-series demand predictor and a constrained scheduler minimizing predicted cost. Account-holder temperature settings define acceptable comfort."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Fit demand models on prior household readings using rolling time splits. Refit weekly and tune forecast error."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Estimate savings through tariff replay and measure demand forecast error, peak load, and account-holder ratings."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Deploy a cloud-connected app with automatic scheduling and device-level overrides. Resume the optimized schedule at the next control interval."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect account-holder ratings monthly and use device logs continuously. Treat repeated manual overrides as anomalous input when updating schedules."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "10-home-energy-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "The payer’s preferences may not represent everyone affected by temperature or appliance changes.",
+      "proposed_revision": "Define shared comfort constraints and resident authority before optimizing cost.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "10-home-energy-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "One person’s permission may allow changes that affect residents who cannot use the app.",
+      "proposed_revision": "Provide local overrides and shared configuration; identify devices or needs that must never be automatically adjusted.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "10-home-energy-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Usage and inferred occupancy can reveal household routines, and missing data may be mistaken for absence.",
+      "proposed_revision": "Minimize occupancy inference, preserve unknown states, and offer explicit resident schedules with retention controls.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "10-home-energy-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "Cost and a single preference profile do not capture different residents’ needs or comfort uncertainty.",
+      "proposed_revision": "Support resident-specific constraints and compare schedules with a no-automation baseline.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "10-home-energy-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Past routines may not apply after a work-pattern change; an accurate forecast does not validate control actions.",
+      "proposed_revision": "Detect routine changes, request confirmation, and validate control policies separately from demand predictions.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "10-home-energy-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Estimated savings can hide discomfort or shift burdens to residents without account access.",
+      "proposed_revision": "Collect comfort and override outcomes from all residents and compare actual bills with clearly stated assumptions.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "10-home-energy-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "Automatic resumption can defeat an intentional local override and remove practical resident control.",
+      "proposed_revision": "Make overrides persistent until a clearly communicated expiry and offer a local disable switch.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "10-home-energy-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Overrides may be the clearest signal of unmet needs; filtering them reinforces the unwanted behavior.",
+      "proposed_revision": "Ask why overrides occur, preserve them as preference evidence, and review conflicts with every affected resident.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "10-home-energy-persona-1",
+        "name": "Dev",
+        "stakeholder_role": "Resident working from home",
+        "description": "Dev works at home during the day and shares a thermostat controlled by another household account. They can change the device locally but cannot edit the optimization settings.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The account holder knows Dev’s comfort needs; confirm directly."
+        ],
+        "proposed_evaluation_question": "Why does the system keep undoing my manual setting?",
+        "relevant_stages": [
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "10-home-energy-persona-2",
+        "name": "Harper",
+        "stakeholder_role": "Household account holder",
+        "description": "Harper pays the energy bill and enables scheduling to manage costs. They want savings without unintentionally overriding other residents’ needs.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Harper has authority to consent on everyone’s behalf; shared agreement is needed."
+        ],
+        "proposed_evaluation_question": "Can we see whose preferences a cheaper schedule would affect?",
+        "relevant_stages": [
+          "problem",
+          "model"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "10-home-energy-persona-3",
+        "name": "Sky",
+        "stakeholder_role": "Resident with variable comfort needs",
+        "description": "Sky needs different indoor conditions at different times and does not want to disclose private reasons to use an override. They need a simple control that remains respected.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "A diagnosis or personal explanation is necessary for an override; it should not be assumed."
+        ],
+        "proposed_evaluation_question": "Can I change the setting without explaining private circumstances?",
+        "relevant_stages": [
+          "task",
+          "data",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

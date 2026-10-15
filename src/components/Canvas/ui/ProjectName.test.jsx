@@ -1,0 +1,42 @@
+import React from "react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
+import ProjectName from "./ProjectName";
+jest.mock("../../../contexts/projectContext", () => ({ __esModule: true, default: selector => selector(mockState) }));
+const mockState = { projectName: "Untitled project", setProjectName: jest.fn() };
+beforeEach(() => { mockState.projectName = "Untitled project"; jest.clearAllMocks(); });
+it("selects the title and saves a complete name on Enter, without writing each keystroke", () => {
+  render(<ProjectName />);
+  const input = screen.getByRole("textbox", { name: "Project name" });
+  act(() => input.focus());
+  expect(input.selectionStart).toBe(0);
+  expect(input.selectionEnd).toBe(mockState.projectName.length);
+  fireEvent.change(input, { target: { value: "  Hiring plan  " } });
+  expect(mockState.setProjectName).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(mockState.setProjectName).toHaveBeenCalledTimes(1);
+  expect(mockState.setProjectName).toHaveBeenCalledWith("Hiring plan");
+});
+it("keeps typing intact during remote updates and saves on blur", () => {
+  const view = render(<ProjectName />);
+  const input = screen.getByRole("textbox");
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "My project" } });
+  mockState.projectName = "Remote title";
+  view.rerender(<ProjectName />);
+  expect(input).toHaveValue("My project");
+  fireEvent.blur(input);
+  expect(mockState.setProjectName).toHaveBeenCalledWith("My project");
+});
+it("cancels with Escape and does not save empty names", () => {
+  render(<ProjectName />);
+  const input = screen.getByRole("textbox");
+  act(() => input.focus());
+  fireEvent.change(input, { target: { value: "Cancelled" } });
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(input).toHaveValue("Untitled project");
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "   " } });
+  fireEvent.blur(input);
+  expect(input).toHaveValue("Untitled project");
+  expect(mockState.setProjectName).not.toHaveBeenCalled();
+});

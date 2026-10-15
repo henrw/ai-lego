@@ -1,0 +1,231 @@
+{
+  "schema_version": "1.0",
+  "id": "09-food-rescue",
+  "title": "Food-rescue pickup allocation",
+  "provenance": {
+    "scenario_origin": "new_demo_scenario",
+    "paper_section": null,
+    "paper_doi": null,
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Food-rescue coordinators match perishable donations with community organizations under transport and storage constraints.",
+    "project_goal": "Recommend donation allocations and pickup plans that reduce waste while meeting community needs.",
+    "evaluation_metrics": [
+      "Rescued food volume",
+      "Spoilage rate",
+      "Delivery feasibility"
+    ],
+    "key_features": [
+      "Demand forecast",
+      "Recipient matching",
+      "Pickup scheduling"
+    ],
+    "requirements": [
+      "Donation records",
+      "Recipient needs and capacity",
+      "Constraint-based allocation"
+    ],
+    "deployment": "Coordinator dashboard with SMS pickup notices.",
+    "target_users": [
+      "Food-rescue coordinators",
+      "Community food organizations",
+      "Volunteer drivers"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "A small pantry serves residents with specific dietary needs but has irregular pickup records. The model favors a large organization that can collect more kilograms per trip, repeatedly leaving the small pantry without suitable food.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Volume optimization may systematically favor large organizations over smaller communities and dietary needs.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the problem block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "problem",
+      "before": "Reduce edible food waste through better donation allocation. The first draft defines success as maximizing kilograms collected.",
+      "proposed_change": "Define access and suitability objectives with recipient organizations alongside waste reduction.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Reduce edible food waste through better donation allocation. The first draft defines success as maximizing kilograms collected."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Forecast recipient demand, match donations to storage and dietary constraints, and propose pickup schedules for coordinator approval."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Combine donation logs, pickup history, storage capacity, and recipient requests. Standardize food categories and infer demand from past collected quantities."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Use a demand forecasting model and a constrained allocation optimizer. Maximize collected weight while enforcing expiry, capacity, and route limits."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Train forecasts on weekly pickups with time-separated validation. Tune error on collected quantities and refresh monthly."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Measure collected weight, spoilage, forecast error, and on-time pickup rate on historical weeks."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Publish proposed allocations in a dashboard and send pickup notices by SMS. Require confirmation within thirty minutes before reallocating food."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect driver completion logs and donor satisfaction weekly. Recipient feedback is currently an optional free-text field."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "09-food-rescue-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "Volume optimization may systematically favor large organizations over smaller communities and dietary needs.",
+      "proposed_revision": "Define access and suitability objectives with recipient organizations alongside waste reduction.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "09-food-rescue-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "Forecast demand may be treated as actual need even when an organization has incomplete reporting.",
+      "proposed_revision": "Allow recipients to state unmet need and uncertainty; require confirmation of suitability before allocation.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "09-food-rescue-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Historical collections reflect transport access and prior allocation, not just need.",
+      "proposed_revision": "Separate expressed need from fulfilled demand and document missing or constrained pickups.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "09-food-rescue-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "Weight is a poor proxy for nutrition, cultural suitability, and distribution equity.",
+      "proposed_revision": "Add recipient-approved suitability constraints and compare allocations across explicit objective choices.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "09-food-rescue-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Forecasting prior allocations can create a self-reinforcing cycle that further reduces small-pantry access.",
+      "proposed_revision": "Evaluate unmet requests and simulate alternative allocations; do not treat unserved need as zero demand.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "09-food-rescue-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Historical replay does not reveal whether recipients received appropriate food or were repeatedly overlooked.",
+      "proposed_revision": "Measure unmet suitable-food requests and allocation coverage by organization; review tradeoffs with recipients.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "09-food-rescue-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "A short confirmation window disadvantages volunteer-run organizations without continuously staffed phones.",
+      "proposed_revision": "Offer configurable response windows and a coordinator-assisted exception path before reallocating.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "09-food-rescue-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Donor and driver feedback can dominate people receiving food; optional text is hard to compare or act upon.",
+      "proposed_revision": "Gather accessible recipient suitability and unmet-need feedback and review recurring allocation gaps weekly.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "09-food-rescue-persona-1",
+        "name": "Amal",
+        "stakeholder_role": "Small-pantry coordinator",
+        "description": "Amal volunteers at a pantry with limited storage and no dedicated dispatcher. They know local dietary needs but cannot always respond within thirty minutes.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The pantry can expand pickup capacity; resources must be checked."
+        ],
+        "proposed_evaluation_question": "Why does limited transport get interpreted as limited need?",
+        "relevant_stages": [
+          "data",
+          "train",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "09-food-rescue-persona-2",
+        "name": "Chris",
+        "stakeholder_role": "Volunteer driver",
+        "description": "Chris has a fixed delivery window and limited vehicle capacity. They need safe, feasible pickup instructions and cannot independently renegotiate the allocation.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "All routes are feasible for the available vehicle; verify constraints."
+        ],
+        "proposed_evaluation_question": "What happens when the assigned pickup does not fit my vehicle or shift?",
+        "relevant_stages": [
+          "task",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "09-food-rescue-persona-3",
+        "name": "Jo",
+        "stakeholder_role": "Community member receiving food",
+        "description": "Jo relies on the pantry and needs food compatible with household dietary requirements. They are affected by allocations but never use the dashboard.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The coordinator fully represents household preferences; direct consultation is needed."
+        ],
+        "proposed_evaluation_question": "Does receiving more kilograms mean receiving food we can actually use?",
+        "relevant_stages": [
+          "problem",
+          "model",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

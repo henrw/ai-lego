@@ -1,36 +1,37 @@
+import OpenAIKeyField from './OpenAIKeyField';
 import React, { useState, useEffect } from "react";
-import { getAuth, signOut } from "firebase/auth";
 import { useUserAuth } from "../authentication/UserAuthContext";
 import { Link, useLocation } from "react-router-dom";
 import { FaUserCircle } from "react-icons/fa";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { ACCOUNT_ROLES, profileAvatar, randomAvatarSeed, roleLabel } from "../utils/avatar";
 import { db } from "../firebase";
 
 const Navbar = () => {
-  const { user } = useUserAuth();
+  const { user, logOut } = useUserAuth();
   const location = useLocation();
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [userDetails, setUserDetails] = useState({});
 
-  // Fetch user details from Firestore
+  const [profilePending, setProfilePending] = useState(false);
+  const [profileError, setProfileError] = useState("");
   useEffect(() => {
-    if (user && Object.keys(user).length !== 0) {
-      const fetchUserDetails = async () => {
-        const userDocRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userDocRef);
-        if (docSnap.exists()) {
-          setUserDetails(docSnap.data());
-        } else {
-          // console.log("No such document!");
-        }
-      };
-      fetchUserDetails().catch(() => setUserDetails({}));
-    }
-  }, [user]);
+    setUserDetails({}); setDropdownVisible(false); setProfileError("");
+    if (!user?.uid) return;
+    return onSnapshot(doc(db, "users", user.uid), snapshot => {
+      setUserDetails(snapshot.data() || {});
+    }, () => setProfileError("Could not load your profile."));
+  }, [user?.uid]);
+  const saveProfile = async changes => {
+    if (!user?.uid || profilePending) return;
+    setProfilePending(true); setProfileError("");
+    try { await updateDoc(doc(db, "users", user.uid), changes); }
+    catch { setProfileError("Could not save your profile. Please retry."); }
+    finally { setProfilePending(false); }
+  };
 
   const handleSignOut = () => {
-    const auth = getAuth();
-    signOut(auth)
+    logOut()
       .then(() => {
         // console.log("User signed out.");
       })
@@ -52,21 +53,13 @@ const Navbar = () => {
         {user ? (
           <>
             <div className="relative">
-              <button onClick={toggleDropdown} className="focus:outline-none">
-                {userDetails.profile_picture ? (
-                  <img
-                    src={userDetails.profile_picture}
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <FaUserCircle size="3em" className="-my-5" color="#A9A9A9" />
-                )}
+              <button onClick={toggleDropdown} aria-label="Account menu" aria-expanded={dropdownVisible} className="focus:outline-none">
+                <img src={profileAvatar(userDetails, user.uid)} alt="Account profile" className="w-8 h-8 rounded-full" />
               </button>
               {dropdownVisible && (
-                <div className="absolute right-0 mt-2 py-2 w-48 bg-white rounded-md shadow-xl z-20">
+                <div className="absolute right-0 mt-2 py-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-md shadow-xl z-20">
                   <div className="px-4 py-2 flex flex-col items-center">
-                    <FaUserCircle size="3em" className="" color="#A9A9A9" />
+                    <img src={profileAvatar(userDetails, user.uid)} alt="Your avatar" className="w-12 h-12 rounded-full mb-2" />
                     <div className="text-sm">{userDetails.fullName}</div>
                     {/* <div className="text-xs text-gray-500">
                       Occupation: {userDetails.occupation}
@@ -76,8 +69,17 @@ const Navbar = () => {
                     </div> */}
                   </div>
                   <div className="px-4 py-2">
-                    <div className="text-xs font-bold text-center">Team Members</div>
-                    {/* Map through team members here */}
+                    <OpenAIKeyField />
+                    <label htmlFor="account-role" className="text-xs font-semibold">Your role</label>
+                    <select id="account-role" value={userDetails.occupation || ""} disabled={profilePending}
+                      onChange={event => saveProfile({ occupation: event.target.value })} className="w-full border rounded p-1 text-sm mt-1">
+                      <option value="">Select a role</option>
+                      {ACCOUNT_ROLES.map(role => <option key={role} value={role}>{role === "Admin" ? role : `${roleLabel(role)} · ${role}`}</option>)}
+                      {userDetails.occupation && !ACCOUNT_ROLES.includes(userDetails.occupation) && <option value={userDetails.occupation}>{userDetails.occupation}</option>}
+                    </select>
+                    <button disabled={profilePending} onClick={() => saveProfile({ avatarSeed: randomAvatarSeed(), profile_picture: "" })}
+                      className="text-sm text-blue-600 mt-3">{profilePending ? "Saving…" : "Randomize avatar"}</button>
+                    {profileError && <p role="alert" className="text-xs text-red-600 mt-2">{profileError}</p>}
                   </div>
                   {/* <div className="px-4 py-2 flex flex-col">
                     <button className="text-sm w-full text-left">
@@ -104,7 +106,7 @@ const Navbar = () => {
           <>
             {isOnCanvas && (
               <div className="relative">
-                <button onClick={toggleDropdown} className="focus:outline-none">
+                <button onClick={toggleDropdown} aria-label="Account menu" aria-expanded={dropdownVisible} className="focus:outline-none">
                   <FaUserCircle size="2em" />
                 </button>
                 {dropdownVisible && (

@@ -1,8 +1,12 @@
+import { specificationSnapshot, resolutionTransition } from "../utils/issueResolution";
+import { canvasRole } from "../utils/accountRole";
+import { accountAuthor } from "../utils/accountAuthor";
 import { v4 as uuid } from "uuid";
 import { createWithEqualityFn } from "zustand/traditional";
 import { db } from "../firebase";
 import { doc, collection, onSnapshot, arrayUnion, arrayRemove, serverTimestamp, writeBatch, updateDoc, runTransaction } from "firebase/firestore";
 import { createDemoProject, DEMO_STORAGE_KEY } from "../demo/scenario";
+import { snapPosition } from "../components/Canvas/brickGeometry";
 
 export const prompts = {
   problem:
@@ -49,7 +53,16 @@ export const stageEvaluationPrompts = {
   feedback: "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
 };
 
-const emptyProject = { projectName: "", projectId: "", cards: [], links: [], evaluations: [], personas: [], canvasScale: { x: 1.1, y: 1.1 }, isRescaled: false };
+const emptyProject = { scenarioPlayback: null, projectName: "", projectId: "", notes: "", cards: [], links: [], evaluations: [], personas: [], canvasScale: { x: 1.1, y: 1.1 }, isRescaled: false };
+export const isNoteCard = card => card.stage?.toLowerCase() === "note";
+let notesDraft = null;
+let nameDraft = null;
+function legacyNotes(cards, projectId) {
+  return cards.filter(isNoteCard).map(card => {
+    try { return sessionStorage.getItem(`card-draft-${projectId}-${card.uid}`) ?? card.description ?? ""; }
+    catch { return card.description || ""; }
+  }).filter(text => text !== "").join("\n\n");
+}
 let disposeProject = () => {};
 let generation = 0;
 const failedWrites = new Map();
@@ -69,7 +82,15 @@ function cachePersona(projectId, value) {
   localStorage.setItem(personaRecoveryKey(projectId), JSON.stringify(replaceById(readPendingPersonas(projectId), value)));
 }
 async function savePersona(ref, projectId, value, epoch) {
-  await updateDoc(ref, { personas: arrayUnion(value), lastUpdatedTime: serverTimestamp() });
+  if (value.profile) {
+    // Profiles can be edited: arrayUnion would append a second copy with the same ID.
+    await runTransaction(db, async transaction => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists()) throw new Error('This project is no longer available.');
+      const personas = (snapshot.data().personas || []).map((p, i) => ({ ...p, uid: p.uid || `legacy-persona-${i}` }));
+      transaction.update(ref, { personas: replaceById(personas, value), lastUpdatedTime: serverTimestamp() });
+    });
+  } else await updateDoc(ref, { personas: arrayUnion(value), lastUpdatedTime: serverTimestamp() });
   // Only a successful server write can discard the refresh recovery copy.
   try {
     const remaining = readPendingPersonas(projectId).filter(item => item.uid !== value.uid || JSON.stringify(item) !== JSON.stringify(value));
@@ -83,6 +104,13 @@ function reportSaveState() {
   useMyStore.setState({ saveStatus: failedWrites.size ? "error" : pendingWrites.size ? "saving" : "saved", saveError: failedWrites.size ? "Some changes could not be saved. Your draft is still here. Retry saving." : "" });
 }
 // Each retry keeps the original operation and document ID. Newer edits replace older retries.
+// Firestore rejects undefined values, including optional fields in saved run snapshots.
+function omitUnset(value) {
+  if (Array.isArray(value)) return value.map(item => item === undefined ? null : omitUnset(item));
+  if (value && Object.getPrototypeOf(value) === Object.prototype) return Object.fromEntries(Object.entries(value).filter(([, item]) => item !== undefined).map(([key, item]) => [key, omitUnset(item)]));
+  return value;
+}
+
 async function persist(key, action) {
   const epoch = generation;
   const version = (writeVersions.get(key) || 0) + 1;
@@ -93,8 +121,8 @@ async function persist(key, action) {
   reportSaveState();
   try {
     if (useMyStore.getState().isDemo) {
-      const { projectName, projectId, cards, links, evaluations, personas, canvasScale } = useMyStore.getState();
-      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ projectName, projectId, cards, links, evaluations, personas, canvasScale }));
+      const { projectName, projectId, notes, cards, links, evaluations, personas, canvasScale } = useMyStore.getState();
+      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify({ projectName, projectId, notes, cards, links, evaluations, personas, canvasScale }));
     } else {
       const previous = writeQueues.get(key) || Promise.resolve();
       const task = previous.catch(() => {}).then(action);
@@ -124,6 +152,7 @@ const useMyStore = createWithEqualityFn((set, get) => ({
   retrySaves: async () => { await Promise.all([...failedWrites.values()].map(retry => retry())); },
   openProject: (projectId, isDemo = false) => {
     disposeProject(); generation += 1; pendingWrites.clear(); failedWrites.clear(); draftDescriptions.clear(); writeVersions.clear(); writeQueues.clear(); pendingPersonas.clear();
+    notesDraft = null; nameDraft = null;
     set({ ...emptyProject, projectId: projectId || "", isDemo, loadingProject: true, loadError: "", saveStatus: "saved", saveError: "" });
     const epoch = generation;
     if (isDemo) {
@@ -132,7 +161,7 @@ const useMyStore = createWithEqualityFn((set, get) => ({
         const saved = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY));
         if (saved && saved.projectId === "demo" && Array.isArray(saved.cards) && saved.cards.every(card => card.uid && card.position && card.stage) && Array.isArray(saved.links) && Array.isArray(saved.personas) && Array.isArray(saved.evaluations)) data = saved;
       } catch { /* A corrupt demo can always be reopened from the curated scenario. */ }
-      set({ ...data, loadingProject: false });
+      set({ ...data, notes: typeof data.notes === "string" ? data.notes : legacyNotes(data.cards, "demo"), loadingProject: false });
       disposeProject = () => {};
       return disposeProject;
     }
@@ -144,7 +173,20 @@ const useMyStore = createWithEqualityFn((set, get) => ({
     const watchers = new Map();
     const received = { cards: new Set(), evaluations: new Set() };
     let expected = { cards: [], evaluations: [] };
-    const updateLoading = () => { if (epoch === generation) set({ loadingProject: Object.keys(expected).some(kind => expected[kind].some(id => !received[kind].has(id))) }); };
+    let initialLoadComplete = false;
+    let serverNotes;
+    const syncNotes = () => {
+      const byId = new Map(get().cards.map(card => [card.uid, card]));
+      set({ notes: notesDraft ?? (typeof serverNotes === "string" ? serverNotes : legacyNotes(expected.cards.map(id => byId.get(id)).filter(Boolean), projectId)) });
+    };
+    const updateLoading = () => {
+      if (epoch !== generation) return;
+      syncNotes();
+      const waitingForDocuments = Object.keys(expected).some(kind => expected[kind].some(id => !received[kind].has(id)));
+      if (!waitingForDocuments) initialLoadComplete = true;
+      // Keep the mounted canvas visible during later card/evaluation subscriptions.
+      set({ loadingProject: !initialLoadComplete && waitingForDocuments });
+    };
     let projectUnsubscribe;
     const fail = () => { if (epoch === generation) set({ loadingProject: false, loadError: "Could not load this project. Check your connection and project access, then retry." }); };
     const watch = (kind, ids) => {
@@ -192,9 +234,10 @@ const useMyStore = createWithEqualityFn((set, get) => ({
       if (epoch !== generation) return;
       if (!snapshot.exists()) { set({ loadingProject: false, loadError: "This project no longer exists. Return home or try the demo." }); return; }
       const data = snapshot.data();
+      serverNotes = data.notes;
       const savedPersonas = (data.personas || []).map((persona, index) => ({ ...persona, uid: persona.uid || `legacy-persona-${index}` }));
-      const personas = [...pendingPersonas.values()].reduce(replaceById, savedPersonas);
-      set({ projectName: data.name || "Untitled project", links: data.links || [], personas, canvasScale: data.canvasScale || emptyProject.canvasScale, loadingProject: false, loadError: "" });
+      const personas = [...pendingPersonas.values()].reduce(replaceById, savedPersonas).filter(p => !p.deleted);
+      set({ projectName: nameDraft?.value ?? (data.name || "Untitled project"), links: data.links || [], personas, canvasScale: { x: Math.max(get().canvasScale.x, data.canvasScale?.x || emptyProject.canvasScale.x), y: Math.max(get().canvasScale.y, data.canvasScale?.y || emptyProject.canvasScale.y) }, loadingProject: false, loadError: "" });
       if (!resumedPersonaSaves) {
         resumedPersonaSaves = true;
         recoveredPersonas.forEach(value => persist(`persona-${value.uid}`, () => savePersona(doc(db, "projects", projectId), projectId, value, epoch)));
@@ -207,16 +250,22 @@ const useMyStore = createWithEqualityFn((set, get) => ({
   },
   resetDemo: async () => {
     generation += 1; pendingWrites.clear(); failedWrites.clear(); draftDescriptions.clear(); writeVersions.clear(); writeQueues.clear();
-    set({ ...createDemoProject(), saveStatus: "saved", saveError: "" }); return persist("demo-reset", () => {});
+    notesDraft = null; nameDraft = null;
+    set({ ...createDemoProject(), notes: "", saveStatus: "saved", saveError: "" }); return persist("demo-reset", () => {});
   },
   extendCanvasRight: () => set(state => ({ canvasScale: { ...state.canvasScale, x: Math.max(1.1, document.documentElement.scrollWidth / window.innerWidth) }, isRescaled: true })),
   extendCanvasBottom: () => set(state => ({ canvasScale: { ...state.canvasScale, y: Math.max(1.1, document.documentElement.scrollHeight / window.innerHeight) }, isRescaled: true })),
   addCardData: async stage => {
-    const { cards, projectId } = get();
-    const card = { uid: newId("cards"), projectId, stage, prompt: prompts[stage] || "Describe this stage.", description: "", comments: [], position: { x: cards.reduce((max, card) => Math.max(card.position.x, max), 0) + 300, y: cards.length ? cards.at(-1).position.y : 50 } };
+    if (isNoteCard({ stage })) return false;
+    const { projectId } = get(); const cards = get().cards.filter(card => !isNoteCard(card));
+    const card = { uid: newId("cards"), projectId, stage, prompt: prompts[stage] || "Describe this stage.", description: "", comments: [], position: snapPosition({ x: cards.length ? cards.reduce((max, card) => Math.max(card.position.x + (card.stage === "note" ? 700 : 240), max), 0) + 40 : 180, y: cards.length ? cards.at(-1).position.y : 60 }) };
     set({ cards: [...cards, card] });
     const ref = get().isDemo ? null : projectRef();
     return persist(`card-add-${card.uid}`, async () => { const batch = writeBatch(db); batch.set(doc(db, "cards", card.uid), { ...card, createdAt: serverTimestamp() }); batch.update(ref, { cards: arrayUnion(card.uid), lastUpdatedTime: serverTimestamp() }); await batch.commit(); });
+  },
+  setCardDraft: (id, description) => {
+    draftDescriptions.set(id, description);
+    set(state => ({ cards: state.cards.map(card => card.uid === id ? { ...card, description } : card) }));
   },
   setCardDescription: async (id, description) => {
     draftDescriptions.set(id, description);
@@ -229,13 +278,39 @@ const useMyStore = createWithEqualityFn((set, get) => ({
     return success;
   },
   setCardPosition: async (id, position) => {
+    position = snapPosition(position);
     set(state => ({ cards: state.cards.map(card => card.uid === id ? { ...card, position } : card) }));
     const ref = get().isDemo ? null : projectRef(); const scale = get().canvasScale;
     return persist(`position-${id}`, async () => { const batch = writeBatch(db); batch.update(doc(db, "cards", id), { position }); batch.update(ref, { canvasScale: scale, lastUpdatedTime: serverTimestamp() }); await batch.commit(); });
   },
-  setProjectName: async projectName => { set({ projectName }); const ref = get().isDemo ? null : projectRef(); return persist("name", () => updateDoc(ref, { name: projectName, lastUpdatedTime: serverTimestamp() })); },
+  setProjectName: async value => {
+    const projectName = value.trim();
+    if (!projectName) return false;
+    const epoch = generation;
+    const draft = { value: projectName };
+    nameDraft = draft;
+    set({ projectName });
+    const ref = get().isDemo ? null : projectRef();
+    const ok = await persist("name", async () => {
+      await updateDoc(ref, { name: projectName, lastUpdatedTime: serverTimestamp() });
+      if (epoch === generation && nameDraft === draft) nameDraft = null;
+    });
+    if (ok && get().isDemo && epoch === generation && nameDraft === draft) nameDraft = null;
+    return ok;
+  },
+  setProjectNotes: async notes => {
+    const epoch = generation;
+    notesDraft = notes; set({ notes });
+    const ref = get().isDemo ? null : projectRef();
+    const ok = await persist("notes", async () => {
+      await updateDoc(ref, { notes, lastUpdatedTime: serverTimestamp() });
+      if (epoch === generation && notesDraft === notes) notesDraft = null;
+    });
+    if (ok && epoch === generation && notesDraft === notes) notesDraft = null;
+    return ok;
+  },
   addPersona: async persona => {
-    const value = { ...persona, uid: persona.uid || newId("personas") }; set(state => ({ personas: replaceById(state.personas, value) }));
+    const value = { ...persona, uid: persona.uid || newId("personas") }; set(state => ({ personas: replaceById(state.personas, value).filter(p => !p.deleted) }));
     const ref = get().isDemo ? null : projectRef();
     const projectId = get().projectId; const epoch = generation;
     if (!get().isDemo) {
@@ -244,10 +319,19 @@ const useMyStore = createWithEqualityFn((set, get) => ({
     }
     return persist(`persona-${value.uid}`, () => savePersona(ref, projectId, value, epoch));
   },
+  deletePersona: async id => {
+    const persona = get().personas.find(p => p.uid === id);
+    if (!persona) return false;
+    // Keep a tombstone and the persona snapshot so existing issues remain readable.
+    return get().addPersona({ ...persona, profile: persona.profile || {}, deleted: true });
+  },
   addComment: async (username, cardId, text) => {
     const card = get().cards.find(item => item.uid === cardId);
     if (!card || !text.trim()) return false;
-    const comment = { uid: newId("comments"), projectId: get().projectId, cardId, by: username || "Anonymous", text, lastUpdatedTime: now() };
+    const epoch = generation;
+    const author = await accountAuthor(username, get().isDemo);
+    if (epoch !== generation || !get().cards.some(item => item.uid === cardId)) return false;
+    const comment = { specificationBaseline: specificationSnapshot(get().cards), resolutionStatus: "open", author, uid: newId("comments"), projectId: get().projectId, cardId, by: author.name, text, lastUpdatedTime: now() };
     set(state => ({ cards: state.cards.map(item => item.uid === cardId ? { ...item, comments: replaceById(item.comments, comment) } : item) }));
     return persist(`comment-${comment.uid}`, async () => {
       const batch = writeBatch(db);
@@ -258,10 +342,70 @@ const useMyStore = createWithEqualityFn((set, get) => ({
   },
   addEvaluation: async (username, cardIds, report) => {
     if (!report.problem?.trim()) return false;
-    const evaluation = { ...report, uid: report.uid || newId("evaluations"), projectId: get().projectId, cardIds: [...cardIds], by: username || "Anonymous", lastUpdatedTime: now() };
+    const epoch = generation;
+    const author = await accountAuthor(username, get().isDemo);
+    if (epoch !== generation) return false;
+    const evaluation = omitUnset({ ...report, specificationBaseline: report.workbench?.planSnapshot || report.stageTrace?.planSnapshot || specificationSnapshot(get().cards), resolutionStatus: "open", author, uid: report.uid || newId("evaluations"), projectId: get().projectId, cardIds: [...cardIds], by: author.name, lastUpdatedTime: now() });
     const ref = get().isDemo ? null : projectRef();
     set(state => ({ evaluations: replaceById(state.evaluations, evaluation) }));
     return persist(`evaluation-${evaluation.uid}`, async () => { const batch = writeBatch(db); batch.set(doc(db, "evaluations", evaluation.uid), evaluation); batch.update(ref, { evaluations: arrayUnion(evaluation.uid), lastUpdatedTime: serverTimestamp() }); await batch.commit(); });
+  },
+  reviewScenario: async (id, input) => {
+    if (!get().evaluations.some(e => e.uid === id && e.workbench)) throw new Error('This scenario is no longer available.');
+    if (!['generated', 'reviewed', 'evidence', 'dismissed'].includes(input.status) || typeof input.note !== 'string' || typeof input.evidence !== 'string' || input.note.length > 12000 || input.evidence.length > 12000) throw new Error('Provide a valid assessment.');
+    if (input.status === 'dismissed' && !input.note.trim()) throw new Error('Record a reason for dismissal.');
+    if (input.status === 'evidence' && !input.evidence.trim()) throw new Error('Record the evidence used to check this scenario.');
+    const epoch = generation;
+    const author = await accountAuthor('Anonymous', get().isDemo);
+    if (epoch !== generation) return false;
+    if (!get().isDemo && !['admin', 'reviewer'].includes(canvasRole(author.occupation))) throw new Error('Only PM/UX reviewers or admins can assess scenarios.');
+    const scenarioReview = { status: input.status, note: input.note.trim(), evidence: input.evidence.trim(), author, reviewedAt: now() };
+    set(state => ({ evaluations: state.evaluations.map(e => e.uid === id ? { ...e, scenarioReview } : e) }));
+    return persist(`scenario-review-${id}`, () => updateDoc(doc(db, 'evaluations', id), { scenarioReview }));
+  },
+  reviewIssue: async (kind, id, action, input) => {
+    if (!["evaluations", "comments"].includes(kind)) return { ok: false, error: "Unknown issue type." };
+    const epoch = generation, projectId = get().projectId, isDemo = get().isDemo;
+    try {
+      // Include text that is still waiting for the editor's debounced save.
+      if (action === "submit") await Promise.all([...draftDescriptions.entries()].filter(([cardId]) => get().cards.some(card => card.uid === cardId)).map(([cardId, description]) => get().setCardDescription(cardId, description)));
+      // Wait for the specification edits that the proposal is about to capture.
+      await Promise.all([...writeQueues.values()]);
+      if (failedWrites.size || pendingWrites.size) throw new Error("Save the specification changes before submitting a resolution. Retry any failed saves first.");
+      const author = await accountAuthor("Demo participant", isDemo);
+      if (epoch !== generation) throw new Error("The project changed. Open the issue again.");
+      const actor = { author, role: isDemo ? "admin" : canvasRole(author.occupation) };
+      const findIssue = () => kind === "evaluations" ? get().evaluations.find(item => item.uid === id) : get().cards.flatMap(card => card.comments || []).find(item => item.uid === id);
+      const apply = patch => {
+        if (epoch !== generation) return;
+        if (kind === "evaluations") set(state => ({ evaluations: state.evaluations.map(item => item.uid === id ? { ...item, ...patch } : item) }));
+        else set(state => ({ cards: state.cards.map(card => ({ ...card, comments: (card.comments || []).map(item => item.uid === id ? { ...item, ...patch } : item) })) }));
+      };
+      let patch;
+      if (isDemo) {
+        const issue = findIssue(); if (!issue) throw new Error("This issue no longer exists.");
+        patch = resolutionTransition(issue, action, actor, get().cards, input, new Date().toISOString());
+        const old = issue; apply(patch);
+        if (!await persist(`issue-${kind}-${id}`, () => {})) { apply(old); throw new Error("Could not save this review. Your draft is retained; retry."); }
+      } else {
+        const ref = doc(db, kind, id);
+        await runTransaction(db, async transaction => {
+          const snapshot = await transaction.get(ref);
+          if (!snapshot.exists() || snapshot.data().projectId !== projectId) throw new Error("This issue no longer exists in the project.");
+          const issue = snapshot.data();
+          const ids = action === "submit" ? input.cardIds || [] : (issue.resolution?.changes || []).map(change => change.cardId);
+          const cardSnapshots = await Promise.all([...new Set(ids)].map(async cardId => ({ uid: cardId, snapshot: await transaction.get(doc(db, "cards", cardId)) })));
+          const cards = cardSnapshots.filter(item => item.snapshot.exists() && item.snapshot.data().projectId === projectId).map(item => ({ uid: item.uid, ...item.snapshot.data() }));
+          if (action === "submit" && ids.some(cardId => !cards.some(card => card.uid === cardId))) throw new Error("A linked block was removed. Select the current specification blocks.");
+          if (action === "submit" && cards.some(card => get().cards.find(local => local.uid === card.uid)?.description !== card.description)) throw new Error("The specification changed while submitting. Review the latest text and try again.");
+          patch = resolutionTransition(issue, action, actor, cards, input, new Date().toISOString());
+          transaction.update(ref, patch);
+        });
+        // A later reviewer response may arrive over the live subscription before this promise returns.
+        if ((findIssue()?.resolutionHistory?.length || 0) <= patch.resolutionHistory.length) apply(patch);
+      }
+      return { ok: true };
+    } catch (error) { return { ok: false, error: error.message || "Could not save this review. Retry." }; }
   },
   addLink: async link => {
     if (!link.start || link.start === link.end || !get().cards.some(card => card.uid === link.start) || !get().cards.some(card => card.uid === link.end) || get().links.some(old => old.start === link.start && old.end === link.end)) return;
@@ -311,7 +455,7 @@ const useMyStore = createWithEqualityFn((set, get) => ({
         (data.cards || []).forEach(id => transaction.delete(doc(db, "cards", id)));
         (data.evaluations || []).forEach(id => transaction.delete(doc(db, "evaluations", id)));
         get().cards.forEach(card => card.comments.forEach(comment => transaction.delete(doc(db, "comments", comment.uid))));
-        transaction.update(ref, { cards: [], links: [], evaluations: [], personas: [], lastUpdatedTime: serverTimestamp() });
+        transaction.update(ref, { cards: [], links: [], evaluations: [], personas: [], notes: "", lastUpdatedTime: serverTimestamp() });
       });
     });
   },

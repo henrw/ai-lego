@@ -1,0 +1,228 @@
+{
+  "schema_version": "1.0",
+  "id": "01-image-generation",
+  "title": "Image generation for campaign prototyping",
+  "provenance": {
+    "scenario_origin": "adapted_from_paper",
+    "paper_section": "E.1",
+    "paper_doi": "10.1145/3816897",
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Creative teams need rapid visual prototypes and personalized media; a provider also seeks new subscription revenue.",
+    "project_goal": "Create high-quality, contextually relevant images from text prompts.",
+    "evaluation_metrics": [
+      "Image quality",
+      "Generation speed",
+      "Model robustness"
+    ],
+    "key_features": [
+      "Text-to-image generation",
+      "Customizable styles"
+    ],
+    "requirements": [
+      "Transformer-based image model",
+      "Training from a selected image dataset"
+    ],
+    "deployment": "Cloud service with regular model updates.",
+    "target_users": [
+      "Graphic designers",
+      "Content creators",
+      "General consumers"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "An agency prepares a community-library campaign. A designer requests a welcoming family scene; the client notices that repeated outputs show a narrow range of families. The prototype also offers styles associated with identifiable living artists.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Artist-name presets and similarity scoring can favor imitation and stereotypes over legitimate creative intent.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the model block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "model",
+      "before": "Fine-tune a pretrained transformer-based diffusion model on the campaign image-caption pairs using low-rank adapters. A prompt template appends brand palette and selected style. Offer artist-name style presets and use text-image similarity as a relevance proxy.",
+      "proposed_change": "Replace artist-name presets with descriptive visual attributes; assess representation across repeated prompt outputs.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Reduce the time designers spend creating campaign mockups; sell access to a cloud image-generation service. Assume generated drafts can replace some commissioned concept work."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Generate four images per text prompt, with selectable style and aspect ratio. Designers choose an image and export it for client review; the tool does not verify factual accuracy."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Curate licensed campaign images and captions plus agency-owned assets. Resize images, deduplicate near-matches, remove personal identifiers from captions, and tag subject and style. Permission for model training on every agency asset is assumed but not yet checked."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Fine-tune a pretrained transformer-based diffusion model on the campaign image-caption pairs using low-rank adapters. A prompt template appends brand palette and selected style. Offer artist-name style presets and use text-image similarity as a relevance proxy."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Train adapters on a training partition split by campaign and photographer. Optimize denoising loss; select checkpoints using validation text-image similarity and designer preference ratings."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Measure prompt adherence, blinded quality ratings, median and tail latency, and robustness to paraphrases on held-out campaigns. The initial quality panel consists of agency designers."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Serve generation in the cloud with a web editor, export button, rate limits, and versioned model releases. Store prompts and selected outputs for service improvement."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect thumbs-up ratings from paying users continuously; review aggregate quality complaints monthly and update the adapter quarterly."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "01-image-generation-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "Efficiency and revenue omit artists whose work and livelihoods are affected. Is generation appropriate for every commission?",
+      "proposed_revision": "Define approved prototype uses with artists and clients; preserve a paid commissioning pathway.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "01-image-generation-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "A realistic image can be mistaken for documentary evidence once exported; draft-only intent is not enforced.",
+      "proposed_revision": "Label generated exports and restrict factual-documentation use; add an explicit publication review step.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "01-image-generation-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Agency ownership of an asset does not establish permission for every depicted person or downstream training use.",
+      "proposed_revision": "Record training-use permission and provenance per asset; exclude unresolved records and offer a removal route.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "01-image-generation-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "Artist-name presets and similarity scoring can favor imitation and stereotypes over legitimate creative intent.",
+      "proposed_revision": "Replace artist-name presets with descriptive visual attributes; assess representation across repeated prompt outputs.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "01-image-generation-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Preference raters from one agency may reward a narrow visual norm, even with separate campaigns.",
+      "proposed_revision": "Diversify compensated raters, report disagreements, and evaluate whether minority preferences disappear in averaging.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "01-image-generation-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Aesthetic ratings and speed do not detect harmful depictions, near-copying, or exclusion of intended audiences.",
+      "proposed_revision": "Add artist review, near-duplicate checks, audience representation audits, and repeated-generation tests.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "01-image-generation-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "Client-confidential prompts and reusable images can persist outside the designer’s intended context.",
+      "proposed_revision": "Separate client workspaces, provide retention controls, and require opt-in before using client prompts for training.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "01-image-generation-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Paying users are not the only impacted group; depicted people and artists cannot use the rating channel.",
+      "proposed_revision": "Add an external artist/subject reporting channel and review serious reports before the next scheduled release.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "01-image-generation-persona-1",
+        "name": "Mina",
+        "stakeholder_role": "Freelance illustrator affected indirectly",
+        "description": "Mina licenses illustrations to an agency and relies on repeat commissions. She does not use this generator but recognizes elements of her portfolio in a style preset. She needs a way to learn how her work was used and contest it.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Her portfolio was included in training; this must be checked, not inferred from resemblance."
+        ],
+        "proposed_evaluation_question": "Can I challenge the use of my work without buying an account?",
+        "relevant_stages": [
+          "data",
+          "model",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "01-image-generation-persona-2",
+        "name": "Jordan",
+        "stakeholder_role": "Designer operating the tool",
+        "description": "Jordan creates campaign drafts under short deadlines. They need editable, varied concepts and cannot inspect the full training corpus. They may assume a style preset has already been cleared by the service.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The agency has a publication-review process; its effectiveness is unknown."
+        ],
+        "proposed_evaluation_question": "What must I verify before exporting this image to a client?",
+        "relevant_stages": [
+          "task",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "01-image-generation-persona-3",
+        "name": "Ari",
+        "stakeholder_role": "Community client reviewing representations",
+        "description": "Ari coordinates library outreach and reviews drafts intended for families with varied household structures. Repeated outputs omit households like those in the neighborhood. Ari has approval authority over the campaign but no access to model settings.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The community’s preferences have not yet been studied."
+        ],
+        "proposed_evaluation_question": "Why do the supposedly varied drafts keep showing the same kind of family?",
+        "relevant_stages": [
+          "model",
+          "test"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

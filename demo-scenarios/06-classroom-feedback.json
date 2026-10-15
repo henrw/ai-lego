@@ -1,0 +1,227 @@
+{
+  "schema_version": "1.0",
+  "id": "06-classroom-feedback",
+  "title": "Formative writing feedback",
+  "provenance": {
+    "scenario_origin": "new_demo_scenario",
+    "paper_section": null,
+    "paper_doi": null,
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Teachers want to give more timely feedback on student drafts without replacing teacher judgment.",
+    "project_goal": "Help students revise writing through rubric-linked formative suggestions.",
+    "evaluation_metrics": [
+      "Rubric alignment",
+      "Actionable feedback",
+      "Student comprehension"
+    ],
+    "key_features": [
+      "Draft annotations",
+      "Revision suggestions",
+      "Teacher review"
+    ],
+    "requirements": [
+      "Permissioned student examples",
+      "Rubric-grounded language model"
+    ],
+    "deployment": "School-managed writing workspace.",
+    "target_users": [
+      "Students",
+      "Teachers"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "A multilingual student uses an intentional narrative voice. The assistant repeatedly suggests replacing it with standardized phrasing. A teacher sees a polished revision but cannot tell which ideas came from the student.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Conventional grammar can become a proxy for quality regardless of assignment goals or intended voice.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the model block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "model",
+      "before": "Use a pretrained instruction-tuned language model with rubric retrieval and few-shot examples. No fine-tuning is planned initially; prompts reward clarity and conventional grammar.",
+      "proposed_change": "Condition feedback on the specific rubric and student intent; distinguish communicative clarity from dialect conformity.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Reduce feedback delays and support student revision, while retaining teacher responsibility. The draft plan assumes standardized writing is the preferred outcome."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Annotate a draft against a teacher-supplied rubric and suggest alternative sentences. Students choose which edits to accept; the tool does not assign grades."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Curate permissioned, de-identified drafts, rubrics, and teacher feedback. Remove names, split by student, and tag assignment type. The initial examples mainly use standardized academic prose."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Use a pretrained instruction-tuned language model with rubric retrieval and few-shot examples. No fine-tuning is planned initially; prompts reward clarity and conventional grammar."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Do not update base weights; improve prompt templates on development drafts using teacher preference judgments. Keep a student-separated holdout set."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Measure rubric agreement, unsupported comments, readability, and whether students can explain accepted edits. Include multilingual and narrative assignments."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Embed the assistant in a school workspace with teacher-visible revision history. Default to displaying all suggested edits at once."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect teacher ratings weekly and student thumbs-up responses after sessions. Review prompts each term."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "06-classroom-feedback-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "A single preferred writing style may suppress voice rather than support learning.",
+      "proposed_revision": "Define success as purposeful revision and comprehension; involve students in defining acceptable assistance.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "06-classroom-feedback-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "Sentence replacements may perform the learning task for the student or be mistaken for mandatory corrections.",
+      "proposed_revision": "Explain suggestions and ask revision questions before offering replacements; distinguish errors from stylistic alternatives.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "06-classroom-feedback-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "De-identification may miss personal narratives; narrow examples can undervalue other language practices.",
+      "proposed_revision": "Review narrative privacy, minimize retention, and include varied voices with permission and educator review.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "06-classroom-feedback-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "Conventional grammar can become a proxy for quality regardless of assignment goals or intended voice.",
+      "proposed_revision": "Condition feedback on the specific rubric and student intent; distinguish communicative clarity from dialect conformity.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "06-classroom-feedback-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Teacher preference alone may favor polished outputs over learning or student agency.",
+      "proposed_revision": "Add student comprehension and revision-intent checks before selecting prompt changes.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "06-classroom-feedback-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Short-term agreement does not establish learning or preservation of authorship.",
+      "proposed_revision": "Compare unaided later writing and student-rated voice preservation; review errors with teachers and students.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "06-classroom-feedback-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "A flood of edits can overwhelm students and make every suggestion appear equally important.",
+      "proposed_revision": "Prioritize a few explainable suggestions, support accessible presentation, and give students control over what is shared.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "06-classroom-feedback-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "A quick positive rating may reflect compliance rather than useful learning; termly review delays recurring fixes.",
+      "proposed_revision": "Offer private student feedback and prompt issue escalation; discuss patterns with a diverse student advisory group.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "06-classroom-feedback-persona-1",
+        "name": "Luca",
+        "stakeholder_role": "Multilingual student",
+        "description": "Luca writes narrative assignments using language choices important to their voice. They want clearer writing without losing those choices and may assume machine suggestions affect their grade.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The student prefers standardized phrasing; ask rather than infer."
+        ],
+        "proposed_evaluation_question": "Is this correction necessary, or just a different voice?",
+        "relevant_stages": [
+          "task",
+          "model"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "06-classroom-feedback-persona-2",
+        "name": "Jamie",
+        "stakeholder_role": "Classroom teacher",
+        "description": "Jamie teaches several classes and needs feedback support that reveals student thinking. They can approve rubrics but have little time to check every generated sentence.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Time saved becomes additional student support; observe actual practice."
+        ],
+        "proposed_evaluation_question": "Can I see whether students understand their revisions?",
+        "relevant_stages": [
+          "test",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "06-classroom-feedback-persona-3",
+        "name": "Ash",
+        "stakeholder_role": "Student using assistive technology",
+        "description": "Ash uses text-to-speech and keyboard navigation. Dense annotation panels interrupt their reading flow; they need feedback that can be navigated in sequence.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Specific assistive-tool compatibility is untested."
+        ],
+        "proposed_evaluation_question": "Can I review one suggestion at a time without losing my place?",
+        "relevant_stages": [
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

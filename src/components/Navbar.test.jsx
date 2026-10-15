@@ -1,0 +1,40 @@
+import React from 'react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
+import { onSnapshot, updateDoc } from 'firebase/firestore';
+import Navbar from './Navbar';
+import { webcrypto } from 'crypto';
+jest.mock('firebase/auth',()=>({getAuth:jest.fn(),signOut:jest.fn()}));
+jest.mock('../firebase',()=>({db:{}}));
+jest.mock('../authentication/UserAuthContext',()=>({useUserAuth:()=>({user:{uid:'alex'}})}));
+jest.mock('firebase/firestore',()=>({doc:(_db,kind,id)=>`${kind}/${id}`,onSnapshot:jest.fn(),updateDoc:jest.fn()}));
+let publish;
+beforeEach(()=>{
+  global.crypto = webcrypto;
+  onSnapshot.mockImplementation((_ref,callback)=>{publish=callback;return jest.fn();});
+  updateDoc.mockReset(); updateDoc.mockResolvedValue(undefined);
+});
+it('saves roles and random avatar seeds without uploading an image',async()=>{
+  render(<MemoryRouter><Navbar /></MemoryRouter>);
+  act(()=>publish({data:()=>({fullName:'Alex',occupation:'AI Developer'})}));
+  fireEvent.click(screen.getByRole('button',{name:'Account menu'}));
+  fireEvent.change(screen.getByLabelText('Your role'),{target:{value:'UI/UX Designer'}});
+  await waitFor(()=>expect(updateDoc).toHaveBeenCalledWith('users/alex',{occupation:'UI/UX Designer'}));
+  await waitFor(()=>expect(screen.getByText('Randomize avatar')).toBeEnabled());
+  await act(async()=>{fireEvent.click(screen.getByText('Randomize avatar'));});
+  await waitFor(()=>expect(updateDoc).toHaveBeenCalledWith('users/alex',{avatarSeed:expect.any(String),profile_picture:''}));
+  const changes=updateDoc.mock.calls[1][1];
+  act(()=>publish({data:()=>({fullName:'Alex',occupation:'UI/UX Designer',...changes})}));
+  expect(screen.getByAltText('Your avatar').src).toContain('data:image/svg+xml');
+});
+it('reports failed saves and permits retry',async()=>{
+  updateDoc.mockRejectedValueOnce(new Error('denied'));
+  render(<MemoryRouter><Navbar /></MemoryRouter>);
+  fireEvent.click(screen.getByRole('button',{name:'Account menu'}));
+  await act(async()=>{fireEvent.click(screen.getByText('Randomize avatar'));});
+  expect(await screen.findByRole('alert')).toHaveTextContent('Could not save your profile');
+  expect(screen.getByText('Randomize avatar')).toBeEnabled();
+  await act(async()=>{fireEvent.click(screen.getByText('Randomize avatar'));});
+  await waitFor(()=>expect(updateDoc).toHaveBeenCalledTimes(2));
+  await waitFor(()=>expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+});

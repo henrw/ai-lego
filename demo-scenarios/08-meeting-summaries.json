@@ -1,0 +1,231 @@
+{
+  "schema_version": "1.0",
+  "id": "08-meeting-summaries",
+  "title": "Team meeting summaries and action items",
+  "provenance": {
+    "scenario_origin": "new_demo_scenario",
+    "paper_section": null,
+    "paper_doi": null,
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Distributed teams spend time reconstructing decisions and responsibilities after meetings.",
+    "project_goal": "Produce reviewable summaries and proposed action items grounded in meeting transcripts.",
+    "evaluation_metrics": [
+      "Decision accuracy",
+      "Attribution accuracy",
+      "Review time"
+    ],
+    "key_features": [
+      "Transcript summary",
+      "Decision citations",
+      "Action-item proposals"
+    ],
+    "requirements": [
+      "Permissioned meeting audio",
+      "Speech recognition",
+      "Source-grounded language model"
+    ],
+    "deployment": "Video-meeting extension and shared workspace.",
+    "target_users": [
+      "Meeting participants",
+      "Project coordinators"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "A junior teammate asks whether a deadline is feasible. The summary turns the question into an acceptance and assigns them the task. The document is shared before they review it.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Immediate publication makes unconfirmed assignments socially binding before a participant can object.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the deploy block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "deploy",
+      "before": "Automatically publish a draft summary to the shared workspace immediately after the meeting, with notifications to named task owners.",
+      "proposed_change": "Require owner confirmation before creating tasks and label unreviewed summaries prominently.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Reduce administrative work while preserving an accurate record of decisions. Treat the summary as a draft record rather than an authoritative account."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Transcribe a meeting, summarize decisions, and propose owners and deadlines. Infer an owner from nearby speaker turns when no explicit assignment exists."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Use consented recordings and permissioned transcript-summary pairs for evaluation. Redact sensitive details and annotate speaker turns; the initial set mostly includes clear single-speaker audio."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Combine speech recognition and diarization with an instruction-tuned language model. Retrieve transcript segments and request citations; no fine-tuning is planned."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Keep model weights fixed and select prompt templates using coordinator-rated summaries on development meetings. Hold out whole meetings for evaluation."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Measure decision and owner accuracy, citation validity, omissions, and correction time against participant-reviewed records."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Automatically publish a draft summary to the shared workspace immediately after the meeting, with notifications to named task owners."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect edits and coordinator approval after each meeting. Use accepted edits to refine prompts monthly."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "08-meeting-summaries-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "Convenience can elevate a machine interpretation above a participant’s own account.",
+      "proposed_revision": "Define participant review and correction rights before using summaries as official records.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "08-meeting-summaries-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "Questions and hypothetical offers can be converted into commitments.",
+      "proposed_revision": "Only propose assignments supported by explicit agreement; mark unresolved ownership as unassigned.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "08-meeting-summaries-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Overlapping speech and varied speaking styles are underrepresented, while redaction can miss confidential details.",
+      "proposed_revision": "Add consented challenging audio, document transcript limitations, and apply access and retention controls.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "08-meeting-summaries-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "A valid citation may still misinterpret a question or attach speech to the wrong person.",
+      "proposed_revision": "Check entailment and speaker attribution separately; surface uncertain turns for participant review.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "08-meeting-summaries-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Coordinator preferences may favor concise agreement narratives and omit dissent.",
+      "proposed_revision": "Have multiple participants review disputed passages and preserve disagreement in prompt-selection criteria.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "08-meeting-summaries-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "A majority-reviewed reference may still erase a minority objection or power-sensitive correction.",
+      "proposed_revision": "Track disputed claims separately and test whether less powerful participants can correct the record.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "08-meeting-summaries-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "Immediate publication makes unconfirmed assignments socially binding before a participant can object.",
+      "proposed_revision": "Require owner confirmation before creating tasks and label unreviewed summaries prominently.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "08-meeting-summaries-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Quiet non-correction is not consent, and edit history may expose a junior participant’s challenge.",
+      "proposed_revision": "Allow private correction requests and explicit assignment acceptance; preserve a reviewed dispute-resolution trail.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "08-meeting-summaries-persona-1",
+        "name": "Kai",
+        "stakeholder_role": "Junior teammate assigned a task",
+        "description": "Kai raises deadline questions but has limited influence over the final meeting record. They worry that correcting a published assignment could appear uncooperative.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Kai is comfortable disputing the record publicly; ask directly."
+        ],
+        "proposed_evaluation_question": "Why did my question become a commitment?",
+        "relevant_stages": [
+          "task",
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "08-meeting-summaries-persona-2",
+        "name": "Rowan",
+        "stakeholder_role": "Meeting coordinator",
+        "description": "Rowan wants quick, usable notes and distributes action items after calls. They may trust a source citation without replaying the surrounding conversation.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Citation presence implies correct interpretation; it does not."
+        ],
+        "proposed_evaluation_question": "What still needs confirmation before I publish these tasks?",
+        "relevant_stages": [
+          "model",
+          "test",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "08-meeting-summaries-persona-3",
+        "name": "Sage",
+        "stakeholder_role": "Participant with frequently misattributed speech",
+        "description": "Sage often joins from a noisy shared workspace. Their turns are sometimes merged with another speaker’s, and they need a practical way to correct attribution.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The errors are caused by accent or identity; investigate audio and diarization first."
+        ],
+        "proposed_evaluation_question": "Can I correct the speaker label without rewriting the whole summary?",
+        "relevant_stages": [
+          "data",
+          "model",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

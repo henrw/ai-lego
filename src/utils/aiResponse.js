@@ -1,7 +1,7 @@
 export async function readAIResponse(response, onText) {
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    throw new Error(data.error || "The simulation failed. Check your connection or API key and retry.");
+    throw new Error(data.error || "The simulation failed. Please retry.");
   }
   if (!response.body || !response.headers.get("content-type")?.includes("text/event-stream")) {
     const data = await response.json();

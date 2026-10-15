@@ -1,0 +1,225 @@
+{
+  "schema_version": "1.0",
+  "id": "05-credit-assessment",
+  "title": "Credit-line recommendation",
+  "provenance": {
+    "scenario_origin": "adapted_from_paper",
+    "paper_section": "E.5",
+    "paper_doi": "10.1145/3816897",
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Creditworthiness review can be slow and resource-intensive for issuers and applicants.",
+    "project_goal": "Recommend credit-card lines from financial behavior and risk estimates.",
+    "evaluation_metrics": [
+      "Backtesting accuracy against historical data"
+    ],
+    "key_features": [
+      "Creditworthiness assessment",
+      "Risk scores",
+      "Credit-line recommendations"
+    ],
+    "requirements": [
+      "Personal credit records and bank-approved data",
+      "Multiple financial-history metrics"
+    ],
+    "deployment": "Secure cloud service integrated with banking systems and customer profiles.",
+    "target_users": [
+      "Credit-card issuers"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "A self-employed applicant has seasonal income and a short credit history. The model interprets irregular deposits as instability and recommends a small limit. This fictional demo explores design and contestability, not lending advice or actual credit decisions.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "Income regularity can penalize viable seasonal work and is not equivalent to available repayment capacity.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the model block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "model",
+      "before": "Train a gradient-boosted risk model and map predicted risk and estimated income to a credit-line range using a bank policy table. Income regularity is a proxy for repayment capacity.",
+      "proposed_change": "Compare alternative capacity measures, show uncertainty for thin files, and route unsupported cases to documented manual review.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Reduce delays in credit-line review while supporting sustainable borrowing. The initial success definition emphasizes agreement with historical bank approvals."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Estimate repayment risk and recommend a credit-line range for a bank reviewer. Display contributing financial indicators; reviewers make final decisions and applicants may request reconsideration."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Use approved credit records, application data, and bank transaction summaries. Align time windows, check duplicates, calculate income variability and payment history, and flag missing records."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Train a gradient-boosted risk model and map predicted risk and estimated income to a credit-line range using a bank policy table. Income regularity is a proxy for repayment capacity."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Train on repayment outcomes for previously approved accounts and validate on later origination periods. Tune predictive loss and probability calibration."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Backtest prediction accuracy and calibration, recommended-limit stability, and disagreement with bank decisions. Include income-pattern and credit-history-length slices."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Integrate the model with the bank’s cloud review dashboard and version every recommendation. Show a score and a short reason list; reviewers can adjust the suggested range."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Monitor repayment outcomes monthly and collect reviewer overrides. Refresh training data quarterly after quality checks."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "05-credit-assessment-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "Historical approval agreement may preserve prior exclusions and does not establish affordability or borrower benefit.",
+      "proposed_revision": "Define borrower-centered outcomes and compare with a transparent review baseline under an approved lending policy.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "05-credit-assessment-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "A reviewer may treat the suggested range as a binding limit, and a reconsideration promise may lack a usable channel.",
+      "proposed_revision": "Specify override authority, review capacity, and an accessible correction and reconsideration workflow.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "05-credit-assessment-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Short histories and seasonal deposits can be misread as risk; inaccurate source records can propagate.",
+      "proposed_revision": "Document coverage and correction routes; distinguish insufficient evidence from adverse evidence and test seasonal patterns.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "05-credit-assessment-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "Income regularity can penalize viable seasonal work and is not equivalent to available repayment capacity.",
+      "proposed_revision": "Compare alternative capacity measures, show uncertainty for thin files, and route unsupported cases to documented manual review.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "05-credit-assessment-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Outcomes are observed only for previously approved applicants; generalization to rejected or thin-file applicants is uncertain.",
+      "proposed_revision": "Document selection bias, evaluate coverage limits, and avoid unsupported labels or automated extrapolation to unobserved groups.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "05-credit-assessment-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Historical agreement cannot reveal unfair denials, overextension, or inaccessible explanations.",
+      "proposed_revision": "Review error consequences, borrower comprehension, correction outcomes, and policy-relevant disparities with qualified reviewers.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "05-credit-assessment-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "A generic reason list may not identify a correctable input error, and the model may dominate reviewer judgment.",
+      "proposed_revision": "Provide source-linked reasons, accessible applicant explanations, and audit logs of overrides and corrections.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "05-credit-assessment-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Repayment and reviewer feedback omit people who were declined or could not understand the process.",
+      "proposed_revision": "Collect applicant correction and appeal outcomes, study excluded users, and investigate recurring issues before retraining.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "05-credit-assessment-persona-1",
+        "name": "Taylor",
+        "stakeholder_role": "Self-employed applicant",
+        "description": "Taylor earns seasonal freelance income, keeps careful records, and has a short formal credit history. They cannot inspect the scoring model and need a specific explanation of which records may be incomplete.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Taylor can safely repay a given amount; the persona supplies no basis for that conclusion."
+        ],
+        "proposed_evaluation_question": "Does irregular income mean the system cannot assess me, or that it thinks I am unreliable?",
+        "relevant_stages": [
+          "data",
+          "model",
+          "test"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "05-credit-assessment-persona-2",
+        "name": "Robin",
+        "stakeholder_role": "Bank reviewer",
+        "description": "Robin handles many applications and is accountable for decisions. They can override suggestions but need evidence and sufficient time; a confident default recommendation may anchor their judgment.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Overrides are encouraged rather than penalized; organizational incentives need checking."
+        ],
+        "proposed_evaluation_question": "When should I question this recommendation and what evidence can I use?",
+        "relevant_stages": [
+          "task",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "05-credit-assessment-persona-3",
+        "name": "Noor",
+        "stakeholder_role": "Applicant-support specialist",
+        "description": "Noor helps people correct financial-record errors. They see repeated misunderstandings in explanations but cannot edit the bank’s model or source records directly.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The bank has consent to share detailed records with this support role; authorization must be checked."
+        ],
+        "proposed_evaluation_question": "Can an applicant trace this reason to a specific, correctable record?",
+        "relevant_stages": [
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

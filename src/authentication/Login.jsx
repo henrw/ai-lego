@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useUserAuth } from "./UserAuthContext";
 import Footer from "../components/Footer";
 
@@ -90,6 +90,15 @@ const Login = () => {
             Sign in
           </button>
         </form>
+        <div className="mt-6 border-t border-gray-100 pt-6 text-center">
+          <p className="text-sm text-gray-500 mb-3">New to AI LEGO?</p>
+          <Link
+            to="/signup"
+            className="block w-full py-2.5 border border-blue-600 text-blue-600 hover:bg-blue-50 font-semibold rounded-lg text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2"
+          >
+            Sign up
+          </Link>
+        </div>
       </div>
 
       <Footer />

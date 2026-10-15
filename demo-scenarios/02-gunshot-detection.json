@@ -1,0 +1,231 @@
+{
+  "schema_version": "1.0",
+  "id": "02-gunshot-detection",
+  "title": "Urban gunshot detection",
+  "provenance": {
+    "scenario_origin": "adapted_from_paper",
+    "paper_section": "E.2",
+    "paper_doi": "10.1145/3816897",
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Urban public-safety teams seek quicker and more accurate responses to gun-related incidents.",
+    "project_goal": "Detect possible gunshots and alert a local police station in real time.",
+    "evaluation_metrics": [
+      "Detection accuracy",
+      "Response time",
+      "Reliability across environments"
+    ],
+    "key_features": [
+      "Real-time acoustic detection",
+      "Automatic police alerts",
+      "Infrastructure integration"
+    ],
+    "requirements": [
+      "Suitable audio model",
+      "Expert-labeled dataset created for the project"
+    ],
+    "deployment": "Edge inference with cloud monitoring.",
+    "target_users": [
+      "Law enforcement agencies",
+      "Security companies",
+      "Police"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "During a neighborhood celebration, fireworks trigger an alert near a residential courtyard. A dispatcher sees a confident location estimate while residents have no way to view or correct the incident record. Use synthetic clips and locations in the demo.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "An urgent interface can turn a provisional signal into de facto evidence, especially during workload peaks.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the deploy block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "deploy",
+      "before": "Run classification on edge devices and send timestamp, location estimate, and confidence to a cloud dashboard. Automatically alert the local station; dispatchers decide whether to send responders.",
+      "proposed_change": "Label alerts as unverified acoustic events; require documented corroboration and retain an auditable decision trail.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Help dispatchers notice possible gunfire more quickly. The initial business case treats a faster police alert as a proxy for improved public safety."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Classify short acoustic events and estimate a location from multiple sensors. Send alerts automatically to a police-station dashboard; the classifier does not identify a shooter or establish that a crime occurred."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Collect controlled recordings and ambient event clips with expert labels. Convert clips into spectrograms, normalize sensor levels, and tag weather and device type. Coverage initially favors areas where sensors already exist."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Use a convolutional audio classifier on spectrograms and multi-sensor timing for location estimates. Treat a high gunshot score as sufficient to create an alert, with one citywide threshold."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Train on expert-labeled clips with noise augmentation; split recordings by event and site. Optimize cross-entropy and tune the alert threshold to improve recall."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Measure precision, recall, false alerts per sensor-day, alert latency, and localization error on held-out sites and weather conditions. Report one aggregate operating point."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Run classification on edge devices and send timestamp, location estimate, and confidence to a cloud dashboard. Automatically alert the local station; dispatchers decide whether to send responders."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect dispatcher disposition labels after each alert and review performance monthly. Unconfirmed events are entered as negative examples."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "02-gunshot-detection-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "Faster police notification does not necessarily mean improved safety for affected residents.",
+      "proposed_revision": "Define community-reviewed safety outcomes and compare the system with non-AI reporting alternatives.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "02-gunshot-detection-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "A sound classification can be interpreted as evidence of a crime or justify a response beyond the system’s scope.",
+      "proposed_revision": "Display uncertainty and prohibited inferences; require corroboration before escalating an alert into action.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "02-gunshot-detection-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "Uneven sensor placement can produce uneven error rates and surveillance burdens; ambient clips may capture speech.",
+      "proposed_revision": "Audit neighborhood coverage, minimize raw-audio retention, and review speech exposure with residents.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "02-gunshot-detection-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "A single threshold may be poorly calibrated for echoes, fireworks, and different device environments.",
+      "proposed_revision": "Calibrate by validated environmental conditions, expose location uncertainty, and abstain on unsupported conditions.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "02-gunshot-detection-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Recall optimization can increase costly false alerts; controlled recordings may differ from operational sounds.",
+      "proposed_revision": "Review false-alert costs with residents and dispatchers; hold out operational sites and sensor types.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "02-gunshot-detection-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "An aggregate result can conceal which neighborhoods bear false alerts or missed incidents.",
+      "proposed_revision": "Report site-level uncertainty and error distributions; evaluate downstream responses and community-reported harms.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "02-gunshot-detection-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "An urgent interface can turn a provisional signal into de facto evidence, especially during workload peaks.",
+      "proposed_revision": "Label alerts as unverified acoustic events; require documented corroboration and retain an auditable decision trail.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "02-gunshot-detection-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Disposition labels may be uncertain and exclude resident accounts; unconfirmed does not mean no gunshot.",
+      "proposed_revision": "Keep unknown outcomes distinct, accept resident corrections, and audit label changes before retraining.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "02-gunshot-detection-persona-1",
+        "name": "Sam",
+        "stakeholder_role": "Resident near a sensor",
+        "description": "Sam lives beside a courtyard where celebrations produce sudden loud sounds. They do not operate the system but may experience an unnecessary response and a persistent incident record. They want a way to contest errors without increasing exposure.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "A specific alert was false; corroboration is needed."
+        ],
+        "proposed_evaluation_question": "How can I correct an alert about my building?",
+        "relevant_stages": [
+          "problem",
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "02-gunshot-detection-persona-2",
+        "name": "Lee",
+        "stakeholder_role": "Dispatcher receiving alerts",
+        "description": "Lee triages several incidents at once and sees location pins with confidence scores. They need uncertainty and corroborating information that remain legible during workload peaks, and may lack time to examine raw audio.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Current training explains the score’s limitations; this is unverified."
+        ],
+        "proposed_evaluation_question": "Does this score justify dispatch, or only a request for more information?",
+        "relevant_stages": [
+          "task",
+          "model",
+          "deploy"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "02-gunshot-detection-persona-3",
+        "name": "Ren",
+        "stakeholder_role": "Community oversight member",
+        "description": "Ren reviews neighborhood safety programs and needs access to aggregate error and response records. They can raise concerns at public meetings but cannot change model thresholds directly.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Residents have agreed on an oversight process; consultation is still needed."
+        ],
+        "proposed_evaluation_question": "Which neighborhoods carry the false-alert burden?",
+        "relevant_stages": [
+          "data",
+          "test",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

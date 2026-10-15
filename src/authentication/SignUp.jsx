@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useUserAuth } from "./UserAuthContext";
 import { db } from "../firebase";
 import { doc, setDoc } from "firebase/firestore";
+import { randomAvatarSeed } from "../utils/avatar";
 import Footer from "../components/Footer";
 
 const SignUp = () => {
@@ -23,9 +24,8 @@ const SignUp = () => {
         email,
         occupation: "",
         experienceLevel: "",
-        employer: "",
-        department: "",
         profile_picture: "",
+        avatarSeed: randomAvatarSeed(),
         projectIds: [],
       });
       navigate("/home", { state: { newUser: true } });

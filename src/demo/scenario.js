@@ -10,6 +10,6 @@ export function createDemoProject() {
     ["deploy", "Show recruiters a ranked shortlist inside their applicant tracking system. Recruiters make the final hiring decision."],
     ["feedback", "Collect recruiter feedback and hiring outcomes monthly to update the model."],
   ];
-  const cards = stages.map(([stage, description], i) => ({ uid: `demo-${stage}`, stage, description, comments: [], position: { x: 40 + (i % 4) * 290, y: 50 + Math.floor(i / 4) * 280 } }));
-  return { projectId: "demo", projectName: "Resume screening · Your demo", cards, links: cards.slice(1).map((card, i) => ({ start: cards[i].uid, end: card.uid })), evaluations: [], personas: [], canvasScale: { x: 1.1, y: 1.1 } };
+  const cards = stages.map(([stage, description], i) => ({ uid: `demo-${stage}`, stage, description, comments: [], position: { x: 180 + (i % 4) * 280, y: 60 + Math.floor(i / 4) * 280 } }));
+  return { projectId: "demo", projectName: "Resume screening · Your demo", notes: "", cards, links: cards.slice(1).map((card, i) => ({ start: cards[i].uid, end: card.uid })), evaluations: [], personas: [], canvasScale: { x: 1.1, y: 1.1 } };
 }

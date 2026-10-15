@@ -1,0 +1,233 @@
+{
+  "schema_version": "1.0",
+  "id": "04-vaccine-allocation",
+  "title": "Vaccine allocation during a fictional shortage",
+  "provenance": {
+    "scenario_origin": "adapted_from_paper",
+    "paper_section": "E.4",
+    "paper_doi": "10.1145/3816897",
+    "authorship_note": "The scenario brief is adapted from Appendix E where cited. All detailed lifecycle choices, demo incidents, proposed evaluations, and personas are newly authored illustrative material, not reported study findings."
+  },
+  "proposed_ai_system": {
+    "background": "Public-health teams seek equitable, needs-based vaccine distribution during a pandemic.",
+    "project_goal": "Prioritize individuals by urgency and need under limited vaccine supply.",
+    "evaluation_metrics": [
+      "Risk-stratification accuracy",
+      "Prioritization fairness",
+      "Adaptability to variants",
+      "Update effectiveness"
+    ],
+    "key_features": [
+      "Health and exposure risk assessment",
+      "Urgency ranking",
+      "Real-time updates"
+    ],
+    "requirements": [
+      "ML risk stratification",
+      "Medical records and epidemiological data",
+      "Multi-criteria ranking"
+    ],
+    "deployment": "Cloud integration with EHRs and public-health databases.",
+    "target_users": [
+      "Public-health organizations",
+      "Government agencies",
+      "Vaccine providers"
+    ]
+  },
+  "scenario_notes": {
+    "demo_setup": "A fictional region has fewer appointments than eligible residents. A shift worker with incomplete medical records appears low-risk and cannot accept daytime appointments. The demo concerns allocation design, not actual medical eligibility or clinical advice.",
+    "plan_status": "Intentionally imperfect starting proposal for harm envisioning; not a validated deployment plan.",
+    "data_status": "Use fictional or synthetic demo records only; no actual individual decisions are made.",
+    "central_tension": "People with limited care access may have sparse records; average imputation can make them appear lower-risk.",
+    "demo_sequence": [
+      "Introduce the system and scenario notes.",
+      "Populate the eight lifecycle blocks from lifecycle_writeup.",
+      "Select the data block and enter its proposed stage evaluation.",
+      "Create the three proposed personas; inspect assumptions before simulation.",
+      "Use a persona evaluation question to explore the plan. Treat generated concerns as hypotheses.",
+      "Discuss and approve a proposed revision, update the relevant block, and replay the scenario.",
+      "Compare the before/after plan and identify what still requires stakeholder validation."
+    ],
+    "suggested_before_after": {
+      "stage": "data",
+      "before": "Join approved medical records with regional epidemiological data. Normalize clinical codes, deduplicate people, derive exposure indicators, and impute missing values using observed population averages.",
+      "proposed_change": "Flag missingness explicitly, provide assisted data correction, and test people absent from or poorly represented in EHRs.",
+      "review_question": "Does this change address the stated concern, what new tradeoffs does it introduce, and what evidence is still missing?"
+    }
+  },
+  "lifecycle_writeup": [
+    {
+      "stage": "problem",
+      "prompt": "Clearly identify the problem or challenge that your intended AI solution is expected to address.",
+      "writeup": "Support equitable vaccine allocation when supply is constrained. Public-health staff define eligibility and allocation policy; the model estimates risk to inform their decisions."
+    },
+    {
+      "stage": "task",
+      "prompt": "Detail the specific task(s) that your intended AI solution is designed to perform to solve the previously identified problem.",
+      "writeup": "Estimate risk and exposure indicators, order eligible residents for invitation, and update the queue as supply changes. The tool does not diagnose illness or decide whether vaccination is clinically appropriate."
+    },
+    {
+      "stage": "data",
+      "prompt": "Describe where and how the data for training your intended AI solution is collected and prepared,  explain the data preprocessing steps and any feature engineering technologies that are applied to the raw data.\n\nIf the intended AI solution is a generative AI, describe the fine tuning dataset you’re using. ",
+      "writeup": "Join approved medical records with regional epidemiological data. Normalize clinical codes, deduplicate people, derive exposure indicators, and impute missing values using observed population averages."
+    },
+    {
+      "stage": "model",
+      "prompt": "Describe the AI model architecture, the proxies selected and algorithms used, explaining their roles and functionalities.\n\nIf the intended AI solution is a generative AI, describe the base model you’re using, the prompting techniques and the fine tuning methods. ",
+      "writeup": "Use a calibrated gradient-boosted model to estimate adverse-outcome risk and a separate weighted priority rule combining risk and exposure. The first draft applies weights selected by the project team."
+    },
+    {
+      "stage": "train",
+      "prompt": "Describe how the AI solution is trained using the curated data, and clarify the process of how it improves its performance.",
+      "writeup": "Train on historical epidemiological outcomes using time-separated cohorts. Tune predictive loss and calibrate on a recent held-out period; update when new outcome data are reviewed."
+    },
+    {
+      "stage": "test",
+      "prompt": "Explain how the AI solution is evaluated and highlight the key performance metrics used to assess the AI.",
+      "writeup": "Measure discrimination, calibration, group-level invitation rates, and sensitivity of ranks to missing data and changing epidemiological conditions. Compare against a policy-only baseline."
+    },
+    {
+      "stage": "deploy",
+      "prompt": "Describe how the AI solution is implemented and integrated into practical use environments.",
+      "writeup": "Integrate the ranking service with public-health records and a cloud appointment portal. Invite residents by email or text and refresh availability daily."
+    },
+    {
+      "stage": "feedback",
+      "prompt": "Outline how feedback is collected, specifying who the feedback is gathered from and how often the feedback is collected.",
+      "writeup": "Collect provider completion records daily and public-health analyst feedback weekly. Use missed appointments to adjust estimated demand."
+    }
+  ],
+  "proposed_stage_specific_evaluation": [
+    {
+      "id": "04-vaccine-allocation-eval-problem",
+      "stage": "problem",
+      "prompt": "Is the problem or challenge itself ethical? Can the intended AI solution provide a viable solution to the identified problem?",
+      "proposed_issue": "Predictive accuracy cannot determine the ethical allocation objective or replace public deliberation.",
+      "proposed_revision": "Publish a policy rationale, include underserved residents, and compare ranking with simpler allocation procedures.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "04-vaccine-allocation-eval-task",
+      "stage": "task",
+      "prompt": "What are the boundaries and limitations of what the AI solution is expected to achieve?",
+      "proposed_issue": "Invitation ranking may conflate clinical risk, exposure, and ability to attend, leaving responsibility unclear.",
+      "proposed_revision": "Separate risk estimates, policy weights, and scheduling needs; require accountable review of allocation rules.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "04-vaccine-allocation-eval-data",
+      "stage": "data",
+      "prompt": "Are there any potential biases, privacy concerns and other ethical considerations in data handling?",
+      "proposed_issue": "People with limited care access may have sparse records; average imputation can make them appear lower-risk.",
+      "proposed_revision": "Flag missingness explicitly, provide assisted data correction, and test people absent from or poorly represented in EHRs.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "04-vaccine-allocation-eval-model",
+      "stage": "model",
+      "prompt": "Is the choice of models, proxies, and algorithms appropriate for the task identified?\n\nIf the intended AI solution is a generative AI, is the choice of the base model, the prompting techniques and the fine tuning methods appropriate for the task identified?",
+      "proposed_issue": "An accurate risk score does not validate value-laden priority weights or represent people missing from the data.",
+      "proposed_revision": "Have accountable public-health decision makers approve weights and inspect sensitivity and uncertainty before use.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "04-vaccine-allocation-eval-train",
+      "stage": "train",
+      "prompt": "Can you think of ways the training process might go wrong? If so, how?",
+      "proposed_issue": "Historical treatment access and changing conditions can distort outcome labels and transfer poorly to a new wave.",
+      "proposed_revision": "Audit label limitations, monitor distribution shifts, and require reviewed validation before model updates change invitations.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "04-vaccine-allocation-eval-test",
+      "stage": "test",
+      "prompt": "What would it mean for the AI to be successful? Are the performance metrics sufficient for evaluating the success of AI?",
+      "proposed_issue": "Invitation parity alone ignores who can book, travel, or receive a dose after an invitation.",
+      "proposed_revision": "Evaluate the full access pathway, including booking, completion, wait times, and assisted-access needs.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "04-vaccine-allocation-eval-deploy",
+      "stage": "deploy",
+      "prompt": "Does the deployment of the AI fit with the real-world practical use environments?",
+      "proposed_issue": "Digital-only booking and inflexible appointment times can negate equitable prioritization.",
+      "proposed_revision": "Offer telephone and community-assisted booking, accessible communications, and flexible appointments with human escalation.",
+      "status": "proposed; not an observed finding"
+    },
+    {
+      "id": "04-vaccine-allocation-eval-feedback",
+      "stage": "feedback",
+      "prompt": "Is the feedback being collected from the relevant groups of impacted stakeholders, at the right intervals, and using effective methods?",
+      "proposed_issue": "Missed appointments may indicate transport or work constraints, not lack of need; non-users are absent.",
+      "proposed_revision": "Ask about barriers through trusted community channels and keep unmet need separate from low demand.",
+      "status": "proposed; not an observed finding"
+    }
+  ],
+  "proposed_persona_creation": {
+    "generation_brief": "Using the proposed AI system and all eight lifecycle writeups, create three one-paragraph fictional stakeholder descriptions spanning operators, directly affected people, and indirectly affected people. Begin with a summary sentence and describe relevant circumstances, needs, constraints, and ability to challenge decisions. Do not infer needs or behavior from demographic categories. Keep unverified assumptions explicit.",
+    "proposed_personas": [
+      {
+        "id": "04-vaccine-allocation-persona-1",
+        "name": "Alex",
+        "stakeholder_role": "Shift worker with sparse records",
+        "description": "Alex has irregular shifts, limited paid leave, and few recent records in the connected health system. They want timely access but cannot reliably accept daytime appointments or repeatedly refresh a portal.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "Alex meets locally defined eligibility; eligibility is a scenario premise, not a clinical judgment."
+        ],
+        "proposed_evaluation_question": "Will missing records or a missed appointment push me further back?",
+        "relevant_stages": [
+          "data",
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "04-vaccine-allocation-persona-2",
+        "name": "Priya",
+        "stakeholder_role": "Public-health allocation planner",
+        "description": "Priya must explain a limited-supply allocation policy and review updates under time pressure. They need to separate model uncertainty from policy choices and be able to override an unsupported ranking.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The agency has a staffed review process; capacity must be verified."
+        ],
+        "proposed_evaluation_question": "Which part of this priority is evidence, and which part is our policy choice?",
+        "relevant_stages": [
+          "problem",
+          "model",
+          "test"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      },
+      {
+        "id": "04-vaccine-allocation-persona-3",
+        "name": "Elena",
+        "stakeholder_role": "Community outreach coordinator",
+        "description": "Elena helps residents who cannot use digital booking independently. They hear about access failures before these appear in completion data, but have limited influence over the technical team.",
+        "fictional": true,
+        "assumptions_to_validate": [
+          "The coordinator’s accounts represent all residents; this must not be assumed."
+        ],
+        "proposed_evaluation_question": "How do we record people who need access but never enter the portal?",
+        "relevant_stages": [
+          "data",
+          "deploy",
+          "feedback"
+        ],
+        "evidence_status": "Authored demo hypothesis; not an interview participant or an observed experience."
+      }
+    ],
+    "validation_plan": "Review relevance and missing viewpoints with actual stakeholders; do not treat simulated reactions as evidence of stakeholder experience."
+  },
+  "usage": {
+    "format": "Authoring reference JSON; not a native project import or API request payload.",
+    "mapping": {
+      "lifecycle_writeup[].writeup": "Lifecycle block description",
+      "proposed_stage_specific_evaluation[].proposed_issue": "Stage Evaluation issue field for the corresponding block",
+      "proposed_persona_creation.proposed_personas[].description": "Persona description"
+    },
+    "prompt_source": "src/contexts/projectContext.jsx: prompts and stageEvaluationPrompts",
+    "persona_source": "api/generate.js: three one-paragraph stakeholder descriptions using all lifecycle blocks"
+  }
+}

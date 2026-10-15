@@ -1,3 +1,4 @@
+import OpenAIKeyField from './OpenAIKeyField';
 // ProfileModal.jsx
 import React from "react";
 import { Modal } from "react-bootstrap";
@@ -12,6 +13,7 @@ const ProfileModal = ({
   handleImageChange,
   uploadProfileImage,
   deleteProfileImage,
+  randomizeProfileImage,
   profileImageUrl,
   fields,
   handleFieldChange,
@@ -51,6 +53,7 @@ const ProfileModal = ({
           ) : (
             <FaUserCircle size="100%" className="text-gray-300" />
           )}
+          <button type="button" onClick={randomizeProfileImage} className="text-blue-600 my-3">Randomize avatar</button>
           <h3 className="text-xl font-semibold mb-2">Public Profile</h3>
           <div className="mb-2">
             <label htmlFor="profileImage" className="btn btn-primary mb-2">
@@ -78,7 +81,9 @@ const ProfileModal = ({
         </div>
         {/* <div className=""> */}
         <form className="w-3/5 p-16" onSubmit={handleSubmit}>
-          <h3 className="text-2xl  mb-2">Work Experience</h3>
+          <h3 className="text-2xl mb-2">Set up your AI access</h3>
+          <OpenAIKeyField />
+          <h3 className="text-2xl mb-2">Work Experience</h3>
           <div>
             <label
               htmlFor="occupation"
@@ -94,6 +99,7 @@ const ProfileModal = ({
               onChange={handleFieldChange("occupation")}
             >
               <option value="">Select an option</option>
+              <option value="Admin">Admin</option>
               <option value="Product Manager">Product Manager</option>
               <option value="UI/UX Designer">UI/UX Designer</option>
               <option value="AI Developer">AI Developer</option>
@@ -147,63 +153,6 @@ const ProfileModal = ({
             )}
           </div>
 
-          {/* Employer Dropdown */}
-          <div>
-            <label
-              htmlFor="employer"
-              className="mt-3 block text-xl font-semibold mb-2"
-            >
-              Employer
-            </label>
-            <select
-              id="employer"
-              name="employer"
-              className="mt-1 block w-full border-2 border-blue-500 shadow-sm rounded-md"
-              value={fields.employer}
-              onChange={handleFieldChange("employer")}
-            >
-              <option value="">Select an option</option>
-              <option value="Other">Other (Please specify)</option>
-            </select>
-            {fields.employer === "Other" && (
-              <input
-                type="text"
-                value={customInputs.customEmployer}
-                onChange={handleCustomInputChange("customEmployer")}
-                placeholder="Enter your employer"
-                className="mt-1 block w-full border-2 border-blue-500 rounded-md shadow-sm"
-              />
-            )}
-          </div>
-
-          {/* Department Dropdown */}
-          <div>
-            <label
-              htmlFor="department"
-              className="mt-3 block text-xl font-semibold mb-2"
-            >
-              Department
-            </label>
-            <select
-              id="department"
-              name="department"
-              className="mt-1 block w-full border-2 border-blue-500 shadow-sm rounded-md"
-              value={fields.department}
-              onChange={handleFieldChange("department")}
-            >
-              <option value="">Select an option</option>
-              <option value="Other">Other (Please specify)</option>
-            </select>
-            {fields.department === "Other" && (
-              <input
-                type="text"
-                value={customInputs.customDepartment}
-                onChange={handleCustomInputChange("customDepartment")}
-                placeholder="Enter your department"
-                className="mt-1 block w-full border-2 border-blue-500 rounded-md shadow-sm"
-              />
-            )}
-          </div>
         </form>
       </Modal.Body>
 

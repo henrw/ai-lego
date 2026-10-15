@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 // Authentication
-import { getAuth } from "firebase/auth";
+import { initializeAuth, browserSessionPersistence, browserPopupRedirectResolver } from "firebase/auth";
 
 // Cloud Storage
 import { getStorage } from "firebase/storage";
@@ -24,7 +24,12 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 // Initialize Firebase Auth
-const auth = getAuth(app);
+// Tab-scoped sessions let collaborators use different accounts in one browser.
+// Configure this before Auth initializes, so shared local persistence is never loaded.
+const auth = initializeAuth(app, {
+  persistence: browserSessionPersistence,
+  popupRedirectResolver: browserPopupRedirectResolver,
+});
 const db = getFirestore(app);
 const storage = getStorage(app);
 export { auth, app, db, storage };

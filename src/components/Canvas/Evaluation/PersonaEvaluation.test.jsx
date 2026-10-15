@@ -8,8 +8,8 @@ jest.mock("../../../contexts/projectContext", () => {
   hook.getState = () => state;
   return { __esModule: true, default: hook };
 });
-const props = { isExpanded: true, setIsExpanded: jest.fn(), selectedPersona: [{ uid: "demo-persona-applicant", name: "Career changer", description: "Applicant with a career gap" }], selectedCardIds: ["data"], cardsData: [{ uid: "data", stage: "data", description: "Historical resumes" }], openAiApiKey: "sk-test-placeholder", setOpenAiApiKey: jest.fn() };
-beforeEach(() => { sessionStorage.clear(); global.fetch = jest.fn(); });
+const props = { isExpanded: true, setIsExpanded: jest.fn(), selectedPersona: [{ uid: "demo-persona-applicant", name: "Career changer", description: "Applicant with a career gap" }], selectedCardIds: ["data"], cardsData: [{ uid: "data", stage: "data", description: "Historical resumes" }] };
+beforeEach(() => { sessionStorage.clear(); sessionStorage.setItem('persona-evaluation-mode-test-project', JSON.stringify('classic')); global.fetch = jest.fn(); });
 afterEach(() => { delete global.fetch; });
 it("releases the pending state and shows a retryable error after an empty AI response", async () => {
   global.fetch.mockResolvedValue({ ok: true, headers: { get: () => "application/json" }, json: async () => ({ res: "" }) });
@@ -18,6 +18,8 @@ it("releases the pending state and shows a retryable error after an empty AI res
   await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("no text"));
   expect(screen.getByRole("button", { name: "Simulate persona's feeling" })).toBeEnabled();
   expect(screen.queryByText("Generating...")).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox", { name: "Your OpenAI API key" })).not.toBeInTheDocument();
+  expect(global.fetch.mock.calls[0][1].headers).not.toHaveProperty("Authorization");
 });
 it("retains the draft after a failed save and reuses its ID when retrying", async () => {
   const save = useMyStore.getState().addEvaluation;
